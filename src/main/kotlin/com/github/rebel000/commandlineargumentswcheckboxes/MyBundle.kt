@@ -1,4 +1,4 @@
-package org.jetbrains.plugins.template
+package com.github.rebel000.commandlineargumentswcheckboxes
 
 import com.intellij.DynamicBundle
 import org.jetbrains.annotations.NonNls
