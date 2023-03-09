@@ -1,18 +1,17 @@
 <!-- Plugin Configuration File. Read more: https://plugins.jetbrains.com/docs/intellij/plugin-configuration-file.html -->
 <idea-plugin>
-    <id>com.github.rebel000.commandlineargumentswcheckboxes</id>
-    <name>IntelliJ Platform Plugin CommandlineArgumentsWCheckboxes</name>
-    <vendor>rebel-000</vendor>
+    <id>com.github.rebel000.cmdlineargs</id>
+    <name>CommandlineArguments With Checkboxes</name>
+    <vendor>Dmitry Stasenko</vendor>
 
-    <depends>com.intellij.modules.platform</depends>
+    <depends>com.intellij.modules.rider</depends>
+    <depends>com.jetbrains.rider-cpp</depends>
 
     <extensions defaultExtensionNs="com.intellij">
-        <applicationService serviceImplementation="com.github.rebel000.commandlineargumentswcheckboxes.services.MyApplicationService"/>
-        <projectService serviceImplementation="com.github.rebel000.commandlineargumentswcheckboxes.services.MyProjectService"/>
+        <toolWindow id="Commandline Arguments" secondary="true" icon="AllIcons.General.Modified" anchor="right"
+                    factoryClass="com.github.rebel000.cmdlineargs.ToolWindowFactory"/>
     </extensions>
-
-    <applicationListeners>
-        <listener class="com.github.rebel000.commandlineargumentswcheckboxes.listeners.MyProjectManagerListener"
-                  topic="com.intellij.openapi.project.ProjectManagerListener"/>
-    </applicationListeners>
+    <extensions defaultExtensionNs="com.jetbrains.rider-cpp">
+        <run.configurations.cpp implementation="com.github.rebel000.cmdlineargs.CppConfigurationParametersExtension"/>
+    </extensions>
 </idea-plugin>
