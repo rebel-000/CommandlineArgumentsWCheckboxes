@@ -3,5 +3,4 @@
 # CommandlineArgumentsWCheckboxes Changelog
 
 ## [Unreleased]
-### Added
-- Initial release
+### Initial release
