@@ -1,12 +1,12 @@
 package com.github.rebel000.cmdlineargs
 
 import com.intellij.icons.AllIcons
-import com.intellij.icons.AllIcons.Icons
 import com.intellij.ide.CommonActionsManager
 import com.intellij.ide.DefaultTreeExpander
 import com.intellij.openapi.actionSystem.ActionToolbarPosition
 import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
+import com.intellij.openapi.actionSystem.DefaultActionGroup
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.SimpleToolWindowPanel
 import com.intellij.openapi.wm.ToolWindow
@@ -29,7 +29,8 @@ class ToolWindowFactory : ToolWindowFactory {
             this.setRemoveAction(ArgumentActionRemove(tree, project))
             this.setMoveDownAction(ArgumentActionMoveDown(tree, project))
             this.setMoveUpAction(ArgumentActionMoveUp(tree, project))
-            this.addExtraAction(object: ToggleActionButton(Resources.message("action.shouldOverride"), AllIcons.Actions.EditSource) {
+            val extraActionsGroup = DefaultActionGroup()
+            extraActionsGroup.add(object: ToggleActionButton(Resources.message("action.shouldOverride"), AllIcons.Actions.EditSource) {
                 override fun isSelected(e: AnActionEvent?): Boolean {
                     return argsService.shouldOverride
                 }
@@ -37,6 +38,7 @@ class ToolWindowFactory : ToolWindowFactory {
                     argsService.shouldOverride = state
                 }
             })
+            this.setActionGroup(extraActionsGroup)
         }.createPanel())
 
         val treeExpander = DefaultTreeExpander(tree)
