@@ -44,7 +44,8 @@ intellij {
 // Configure Gradle Changelog Plugin - read more: https://github.com/JetBrains/gradle-changelog-plugin
 changelog {
     groups.set(emptyList())
-    repositoryUrl.set(properties("pluginRepositoryUrl"))
+    version.set(properties("pluginVersion"))
+//    repositoryUrl.set(properties("pluginRepositoryUrl"))
 }
 
 // Configure Gradle Qodana Plugin - read more: https://github.com/JetBrains/gradle-qodana-plugin
