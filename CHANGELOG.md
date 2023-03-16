@@ -3,6 +3,9 @@
 # CommandlineArgumentsWCheckboxes Changelog
 
 ## Unreleased
+
+## 1.1.0 - 2023-03-16
+
 ### Added
 - Copy/Paste actions
 - Configuration filters
