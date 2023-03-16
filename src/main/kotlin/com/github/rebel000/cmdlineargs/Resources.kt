@@ -5,6 +5,9 @@ import org.jetbrains.annotations.NonNls
 import org.jetbrains.annotations.PropertyKey
 
 @NonNls
+const val COMMANDLINE_PATCHED = "com.github.rebel000.cmdlineargs.patched"
+
+@NonNls
 private const val BUNDLE = "messages.CommandlineArgsBundle"
 
 object Resources : AbstractBundle(BUNDLE) {

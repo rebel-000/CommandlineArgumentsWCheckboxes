@@ -9,9 +9,13 @@
 
     <extensions defaultExtensionNs="com.intellij">
         <toolWindow id="Commandline Arguments" secondary="true" icon="AllIcons.General.Modified" anchor="right"
-                    factoryClass="com.github.rebel000.cmdlineargs.ToolWindowFactory"/>
+                    factoryClass="com.github.rebel000.cmdlineargs.ui.ToolWindowFactory"/>
     </extensions>
     <extensions defaultExtensionNs="com.jetbrains.rider-cpp">
-        <run.configurations.cpp implementation="com.github.rebel000.cmdlineargs.CppConfigurationParametersExtension"/>
+        <run.configurations.cpp implementation="com.github.rebel000.cmdlineargs.extensions.CppConfigurationParametersExtension"/>
+    </extensions>
+    <extensions defaultExtensionNs="com.intellij">
+        <rider.patchCommandLine implementation="com.github.rebel000.cmdlineargs.extensions.PatchCommandLineExtension" />
+        <rider.configurationExecutorExtension implementation="com.github.rebel000.cmdlineargs.extensions.RiderConfigurationExecutorExtension" />
     </extensions>
 </idea-plugin>

@@ -6,7 +6,7 @@
 
 <!-- Plugin description -->
 The CommandlineArgumentsWCheckboxes plugin provides option to pass arguments to C++ run configurations in convenient matter by simply managing them in side toolwindow.
-this plugin was inspired by [Smart Command Line Arguments for Visual Studio](https://github.com/MBulli/SmartCommandlineArgs) but only has basic argument management functions, works only with Rider.
+this plugin was inspired by [Smart Command Line Arguments for Visual Studio](https://github.com/MBulli/SmartCommandlineArgs), works only with Rider.
 
 ## Usage
 Open the window via:
