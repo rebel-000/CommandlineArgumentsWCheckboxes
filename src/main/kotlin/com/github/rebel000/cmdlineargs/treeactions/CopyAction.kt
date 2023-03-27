@@ -22,7 +22,9 @@ class CopyAction(private val tree: ArgumentTree) :
         val nodes = tree.selectedNodes()
         val strings = Vector<String>()
         for (node in nodes) {
-            node.toStrings(strings, 0)
+            if (!node.checkIsAncestorIn(nodes)) {
+                node.toStrings(strings, 0)
+            }
         }
         CopyPasteManager.getInstance().setContents(StringSelection(strings.joinToString("\n")))
     }

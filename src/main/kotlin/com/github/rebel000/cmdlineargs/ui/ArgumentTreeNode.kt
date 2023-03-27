@@ -11,6 +11,18 @@ open class ArgumentTreeNode(var name: String, var isFolder: Boolean) : com.intel
     var filters: Filters = Filters()
     var isExpanded: Boolean = false
 
+    fun findAncestorIn(nodes: Array<ArgumentTreeNode>): ArgumentTreeNode? {
+        var node = getParent()
+        while (node != null && !nodes.contains(node)) {
+            node = node.getParent()
+        }
+        return node
+    }
+
+    fun checkIsAncestorIn(nodes: Array<ArgumentTreeNode>): Boolean {
+        return findAncestorIn(nodes) != null
+    }
+
     fun toStrings(out: Vector<String>, indent: Int) {
         out.ensureCapacity(out.size + childCount + 1)
         out.add("\t".repeat(indent) + name)
