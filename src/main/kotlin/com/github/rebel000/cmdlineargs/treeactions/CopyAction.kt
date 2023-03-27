@@ -19,7 +19,7 @@ class CopyAction(private val tree: ArgumentTree) :
     }
 
     override fun actionPerformed(e: AnActionEvent) {
-        val nodes = tree.selectedNodes()
+        val nodes = tree.selectedNodes(false)
         val strings = Vector<String>()
         for (node in nodes) {
             if (!node.checkIsAncestorIn(nodes)) {

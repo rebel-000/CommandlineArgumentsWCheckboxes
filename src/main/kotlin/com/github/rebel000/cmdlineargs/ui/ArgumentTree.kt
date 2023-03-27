@@ -22,6 +22,7 @@ import javax.swing.event.TreeModelEvent
 import javax.swing.event.TreeModelListener
 import javax.swing.tree.*
 import kotlin.collections.ArrayList
+import kotlin.math.min
 
 @Suppress("DialogTitleCapitalization")
 class ArgumentTree(private val project: Project) :
@@ -31,9 +32,19 @@ class ArgumentTree(private val project: Project) :
     private val argsService = ArgumentsService.getInstance(project)
     private val settingsFileName: String = project.solutionDirectory.path + "/" + project.solutionName + ".ddargs.json"
     private val rootNode = ArgumentTreeRootNode()
-    private var isLocked: Boolean = false
+    private var lockedCounter: Int = 0
     private var hasChanges = false
     private val myModel: ArgumentTreeModel get() = model as ArgumentTreeModel
+    private var isLocked: Boolean
+        get() = lockedCounter == 0
+        set(value) {
+            if (value) {
+                lockedCounter++
+            }
+            else {
+                lockedCounter--
+            }
+        }
 
     override fun setTransferHandler(handler: TransferHandler?) {
         super.setTransferHandler(handler)
@@ -73,8 +84,8 @@ class ArgumentTree(private val project: Project) :
         }
     }
 
-    fun insertNode(node: ArgumentTreeNode, parent: ArgumentTreeNode? = null, index: Int) {
-        myModel.insertNodeInto(node, parent!!, index)
+    fun insertNode(node: ArgumentTreeNode, parent: ArgumentTreeNode, index: Int = Int.MAX_VALUE) {
+        myModel.insertNodeInto(node, parent, min(index, parent.childCount))
     }
 
     fun editNode(node: ArgumentTreeNode) {
@@ -130,7 +141,15 @@ class ArgumentTree(private val project: Project) :
         unlock()
     }
 
-    fun selectedNodes(): Array<ArgumentTreeNode> {
+    fun selectedNodes(sorted: Boolean = false): Array<ArgumentTreeNode> {
+        if (sorted) {
+            val sortedSelectionRows = selectionRows.sorted()
+            val selectedNodes = ArrayList<ArgumentTreeNode>(sortedSelectionRows.count())
+            for (row in sortedSelectionRows) {
+                selectedNodes.add(getPathForRow(row).lastPathComponent as ArgumentTreeNode)
+            }
+            return selectedNodes.toArray(arrayOf())
+        }
         return getSelectedNodes(ArgumentTreeNode::class.java, null)
     }
 
@@ -327,7 +346,7 @@ class ArgumentTree(private val project: Project) :
                 position == RowsDnDSupport.RefinedDropSupport.Position.ABOVE
             )
             val folderPath = folder.path
-            val selectedNodes = selectedNodes().filter{ n -> !folderPath.contains(n) }.toTypedArray()
+            val selectedNodes = selectedNodes(true).filter{ n -> !folderPath.contains(n) }.toTypedArray()
             val moveNodes = selectedNodes.filter { n -> !n.checkIsAncestorIn(selectedNodes) }
             val newSelectionPaths = ArrayList<TreePath>(moveNodes.count())
             for (node in moveNodes) {

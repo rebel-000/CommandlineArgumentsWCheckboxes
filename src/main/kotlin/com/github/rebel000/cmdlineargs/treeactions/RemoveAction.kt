@@ -7,7 +7,7 @@ import com.intellij.ui.AnActionButtonRunnable
 class RemoveAction(private val tree: ArgumentTree) : AnActionButtonRunnable {
     override fun run(button: AnActionButton) {
         val index: Int? = tree.selectionRows.firstOrNull()
-        tree.removeNodes(tree.selectedNodes())
+        tree.removeNodes(tree.selectedNodes(false))
         if (index != null) {
             tree.addSelectionRow(index)
         }

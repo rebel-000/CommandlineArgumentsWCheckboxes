@@ -110,6 +110,10 @@ open class ArgumentTreeNode(var name: String, var isFolder: Boolean) : com.intel
         return super.getChildAfter(node) as ArgumentTreeNode?
     }
 
+    override fun getChildBefore(node: TreeNode): ArgumentTreeNode? {
+        return super.getChildBefore(node) as ArgumentTreeNode?
+    }
+
     fun childrenArgs(): Enumeration<ArgumentTreeNode> {
         @Suppress("UNCHECKED_CAST")
         return super.children() as Enumeration<ArgumentTreeNode>
