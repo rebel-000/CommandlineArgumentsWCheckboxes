@@ -21,6 +21,7 @@ import javax.swing.event.TreeExpansionListener
 import javax.swing.event.TreeModelEvent
 import javax.swing.event.TreeModelListener
 import javax.swing.tree.*
+import kotlin.collections.ArrayList
 
 @Suppress("DialogTitleCapitalization")
 class ArgumentTree(private val project: Project) :
@@ -239,7 +240,7 @@ class ArgumentTree(private val project: Project) :
                     val parent = node.parent
                     if (parent?.singleChoice == true) {
                         for (child in parent.childrenArgs()) {
-                            if (child != node) {
+                            if (child !== node) {
                                 setNodeState(child, false)
                             }
                         }
@@ -295,13 +296,13 @@ class ArgumentTree(private val project: Project) :
             }
             val oldPaths = selectionPaths ?: return false
             val newNode = getPathForRow(newIndex).lastPathComponent as ArgumentTreeNode
+            val newParent = newNode.parent
             for (oldPath in oldPaths) {
                 val oldNode = oldPath.lastPathComponent as ArgumentTreeNode
                 if (oldNode === newNode) {
                     return false
                 }
                 val oldParent = oldNode.parent
-                val newParent = newNode.parent
                 if (oldParent === newParent) {
                     if (oldNode.previousSibling === newNode && position == RowsDnDSupport.RefinedDropSupport.Position.BELOW) {
                         return false
@@ -309,9 +310,6 @@ class ArgumentTree(private val project: Project) :
                     if (oldNode.nextSibling === newNode && position == RowsDnDSupport.RefinedDropSupport.Position.ABOVE) {
                         return false
                     }
-                }
-                if (newParent === oldNode || oldParent === newNode) {
-                    return false
                 }
             }
             return true
@@ -323,44 +321,36 @@ class ArgumentTree(private val project: Project) :
 
         override fun drop(oldIndex: Int, newIndex: Int, position: RowsDnDSupport.RefinedDropSupport.Position) {
             lock()
-            val selectedNodes = selectedNodes()
-            val filteredNodes = selectedNodes.filter { n ->
-                var result = true
-                var parent = n.parent
-                while (parent != null) {
-                    if (selectedNodes.contains(parent)) {
-                        result = false
-                        break
-                    }
-                    parent = parent.parent
-                }
-                result
-            }
             val dstNode = getPathForRow(newIndex).lastPathComponent as ArgumentTreeNode
             var (folder, index) = getInsertPosition(
                 dstNode,
                 position == RowsDnDSupport.RefinedDropSupport.Position.ABOVE
             )
-            for (node in filteredNodes) {
+            val folderPath = folder.path
+            val selectedNodes = selectedNodes().filter{ n -> !folderPath.contains(n) }.toTypedArray()
+            val moveNodes = selectedNodes.filter { n -> !n.checkIsAncestorIn(selectedNodes) }
+            val newSelectionPaths = ArrayList<TreePath>(moveNodes.count())
+            for (node in moveNodes) {
                 val wasExpanded = isExpanded(TreePath(node.path))
                 if (folder.singleChoice) {
                     setNodeState(node, false)
                 }
-                if (node.parent == folder && folder.getIndex(node) < index) {
+                if (node.parent === folder && folder.getIndex(node) < index) {
                     removeNodeFromParent(node)
                     insertNodeInto(node, folder, index - 1)
+                    newSelectionPaths.add(TreePath(node.path))
                 } else {
                     removeNodeFromParent(node)
                     insertNodeInto(node, folder, index)
+                    newSelectionPaths.add(TreePath(node.path))
                     index++
                 }
-                val treePath = TreePath(node.path)
-                selectionPath = treePath
                 if (wasExpanded) {
-                    expandPath(treePath)
+                    expandPath(TreePath(node.path))
                 }
             }
             expandPath(TreePath(folder.path))
+            selectionPaths = newSelectionPaths.toArray(arrayOf());
             unlock()
         }
     }
