@@ -36,12 +36,12 @@ class ArgumentTree(private val project: Project) :
     private var hasChanges = false
     private val myModel: ArgumentTreeModel get() = model as ArgumentTreeModel
     private var isLocked: Boolean
-        get() = lockedCounter == 0
+        get() = lockedCounter > 0
         set(value) {
             if (value) {
                 lockedCounter++
             }
-            else {
+            else if (lockedCounter > 0) {
                 lockedCounter--
             }
         }
