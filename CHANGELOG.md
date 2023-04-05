@@ -4,6 +4,8 @@
 
 ## Unreleased
 
+## 1.2.0 - 2023-04-05
+
 ### Fixed
 - Disappearing elements after drag and drop
 - Move up/down actions
