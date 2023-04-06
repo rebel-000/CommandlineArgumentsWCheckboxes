@@ -43,7 +43,6 @@ class ToolWindowFactory : ToolWindowFactory {
         titleActions.add(CommonActionsManager.getInstance().createExpandAllAction(treeExpander, tree))
         titleActions.add(CommonActionsManager.getInstance().createCollapseAllAction(treeExpander, tree))
         toolWindow.title = Resources.message("toolwindow.title")
-        toolWindow.setIcon(AllIcons.Debugger.Console)
         toolWindow.setTitleActions(titleActions)
         toolWindow.contentManager.addContent(ContentImpl(panel, "", true))
     }

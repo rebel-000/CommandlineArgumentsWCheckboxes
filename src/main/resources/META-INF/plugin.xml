@@ -8,7 +8,7 @@
     <depends>com.jetbrains.rider-cpp</depends>
 
     <extensions defaultExtensionNs="com.intellij">
-        <toolWindow id="Commandline Arguments" secondary="true" icon="AllIcons.Debugger.Console" anchor="right"
+        <toolWindow id="Commandline Arguments" secondary="true" icon="CmdlineArgsIcons.Toolwindow" anchor="right"
                     factoryClass="com.github.rebel000.cmdlineargs.ui.ToolWindowFactory"/>
     </extensions>
     <extensions defaultExtensionNs="com.jetbrains.rider-cpp">
