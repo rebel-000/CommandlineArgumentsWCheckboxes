@@ -1,14 +1,14 @@
 package com.github.rebel000.cmdlineargs.treeactions
 
 import com.github.rebel000.cmdlineargs.ui.ArgumentTree
-import com.github.rebel000.cmdlineargs.ui.ArgumentTreeNode
-import com.intellij.ui.AnActionButton
-import com.intellij.ui.AnActionButtonRunnable
+import com.intellij.openapi.actionSystem.AnAction
+import com.intellij.openapi.actionSystem.AnActionEvent
 import javax.swing.tree.TreePath
 import kotlin.math.min
 
-class MoveDownAction(private val tree: ArgumentTree) : AnActionButtonRunnable {
-    override fun run(button: AnActionButton) {
+class MoveDownAction : AnAction() {
+    override fun actionPerformed(e: AnActionEvent) {
+        val tree = ArgumentTree.getInstance(e.project) ?: return
         val selectedNodes = tree.selectedNodes(true)
         if (selectedNodes.isNotEmpty()) {
             val newSelectionPaths = ArrayList<TreePath>(selectedNodes.count())
@@ -42,6 +42,9 @@ class MoveDownAction(private val tree: ArgumentTree) : AnActionButtonRunnable {
                     }
                     tree.removeNode(node)
                     tree.insertNode(node, parent, index)
+                    if (parent.singleChoice) {
+                        tree.setNodeState(node, false)
+                    }
                     val path = TreePath(node.path)
                     newSelectionPaths.add(path)
                     if (wasExpanded) {

@@ -1,25 +1,16 @@
 package com.github.rebel000.cmdlineargs.treeactions
 
-import com.github.rebel000.cmdlineargs.Resources
 import com.github.rebel000.cmdlineargs.ui.ArgumentTree
 import com.github.rebel000.cmdlineargs.ui.ArgumentTreeNode
-import com.intellij.icons.AllIcons
-import com.intellij.openapi.actionSystem.ActionManager
 import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
-import com.intellij.openapi.actionSystem.IdeActions
 import com.intellij.openapi.ide.CopyPasteManager
 import java.awt.datatransfer.DataFlavor
 import kotlin.math.max
 
-@Suppress("DialogTitleCapitalization")
-class PasteAction(private val tree: ArgumentTree) :
-    AnAction(Resources.message("action.paste"), Resources.message("action.paste"), AllIcons.Actions.MenuPaste) {
-    init {
-        registerCustomShortcutSet(ActionManager.getInstance().getAction(IdeActions.ACTION_PASTE).shortcutSet, tree)
-    }
-
+class PasteAction : AnAction() {
     override fun actionPerformed(e: AnActionEvent) {
+        val tree = ArgumentTree.getInstance(e.project) ?: return
         val str = CopyPasteManager.getInstance().getContents<String?>(DataFlavor.stringFlavor)
         if (str != null) {
             val args = str.split("\n")
@@ -57,6 +48,9 @@ class PasteAction(private val tree: ArgumentTree) :
 
                     node = ArgumentTreeNode(arg.trimStart(), false)
                     tree.insertNode(node, parent, index++)
+                    if (parent.singleChoice) {
+                        tree.setNodeState(node, false)
+                    }
                 }
                 tree.expandNode(baseParent, false)
                 tree.unlock()

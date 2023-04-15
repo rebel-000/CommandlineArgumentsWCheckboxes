@@ -163,6 +163,7 @@ open class ArgumentTreeNode(var name: String, var isFolder: Boolean) : com.intel
                 runConfigurationValue = value
                 string = null
             }
+
         override fun toString(): String {
             if (string == null) {
                 if (platform.isNotEmpty() || configuration.isNotEmpty() || runConfiguration.isNotEmpty()) {
@@ -186,8 +187,7 @@ open class ArgumentTreeNode(var name: String, var isFolder: Boolean) : com.intel
                         sb.append(runConfiguration)
                     }
                     string = String.format("(%s)", sb)
-                }
-                else {
+                } else {
                     string = ""
                 }
             }

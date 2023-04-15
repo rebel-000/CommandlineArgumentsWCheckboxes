@@ -14,11 +14,19 @@ import org.jetbrains.concurrency.resolvedPromise
 
 @Suppress("unused")
 class PatchCommandLineExtension : PatchCommandLineExtension {
-    override fun patchDebugCommandLine(lifetime: Lifetime, workerRunInfo: WorkerRunInfo, project: Project): Promise<WorkerRunInfo> {
+    override fun patchDebugCommandLine(
+        lifetime: Lifetime,
+        workerRunInfo: WorkerRunInfo,
+        project: Project
+    ): Promise<WorkerRunInfo> {
         return resolvedPromise(workerRunInfo)
     }
 
-    override fun patchRunCommandLine(commandLine: GeneralCommandLine, dotNetRuntime: DotNetRuntime, project: Project): ProcessListener? {
+    override fun patchRunCommandLine(
+        commandLine: GeneralCommandLine,
+        dotNetRuntime: DotNetRuntime,
+        project: Project
+    ): ProcessListener? {
         val argsService = ArgumentsService.getInstance(project)
         if (argsService.shouldOverride || argsService.arguments.isNotEmpty()) {
             if (!commandLine.environment.contains(COMMANDLINE_PATCHED)) {
@@ -43,7 +51,10 @@ class PatchCommandLineExtension : PatchCommandLineExtension {
                         }
                         if (offset > 0) {
                             val prefixArgs = parameters.subList(0, offset)
-                            val suffixArgs = if (offset != expectedOffset) parameters.subList(offset + defaultArgs.size, parameters.size) else listOf<String>()
+                            val suffixArgs = if (offset != expectedOffset) parameters.subList(
+                                offset + defaultArgs.size,
+                                parameters.size
+                            ) else listOf<String>()
                             commandLine.parametersList.clearAll()
                             commandLine.addParameters(prefixArgs)
                             commandLine.addParameters(suffixArgs)

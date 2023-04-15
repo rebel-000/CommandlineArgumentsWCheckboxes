@@ -4,19 +4,24 @@ import com.github.rebel000.cmdlineargs.ArgumentsService
 import com.github.rebel000.cmdlineargs.Resources
 import com.github.rebel000.cmdlineargs.ui.ArgumentTree
 import com.intellij.icons.AllIcons
+import com.intellij.openapi.actionSystem.ActionUpdateThread
 import com.intellij.openapi.actionSystem.AnActionEvent
-import com.intellij.openapi.project.Project
 import com.intellij.ui.ToggleActionButton
 
-class OverrideBaseParameters(private val tree: ArgumentTree, project: Project): ToggleActionButton(Resources.message("action.shouldOverride"), AllIcons.Actions.Lightning) {
-    private val argsService = ArgumentsService.getInstance(project)
-
+class OverrideBaseParameters :
+    ToggleActionButton(Resources.message("action.cmdlineargs.shouldOverride.text"), AllIcons.Actions.Lightning) {
     override fun isSelected(e: AnActionEvent?): Boolean {
-        return argsService.shouldOverride
+        val project = (e ?: return false).project ?: return false
+        return ArgumentsService.getInstance(project).shouldOverride
     }
 
     override fun setSelected(e: AnActionEvent?, state: Boolean) {
-        argsService.shouldOverride = state
-        tree.saveState()
+        val project = (e ?: return).project ?: return
+        ArgumentsService.getInstance(project).shouldOverride = state
+        ArgumentTree.getInstance(project)?.saveState()
+    }
+
+    override fun getActionUpdateThread(): ActionUpdateThread {
+        return ActionUpdateThread.BGT
     }
 }

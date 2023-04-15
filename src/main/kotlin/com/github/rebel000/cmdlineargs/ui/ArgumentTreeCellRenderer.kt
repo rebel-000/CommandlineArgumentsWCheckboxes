@@ -22,7 +22,7 @@ class ArgumentTreeCellRenderer : CheckboxTree.CheckboxTreeCellRenderer() {
             }
             if (value.isFolder) {
                 textRenderer.preferredSize
-                textRenderer.icon = AllIcons.Nodes.Folder
+                textRenderer.icon = if (value.singleChoice) AllIcons.Nodes.Module else AllIcons.Nodes.Folder
                 textRenderer.append(String.format("[%s]  ", value.name))
                 textRenderer.append(value.filters.toString(), SimpleTextAttributes.GRAYED_ITALIC_ATTRIBUTES)
                 textRenderer.appendTextPadding(padding)

@@ -18,26 +18,30 @@ class ArgumentsService(private val project: Project) {
         fun getInstance(project: Project): ArgumentsService = project.service()
     }
 
-    val defaultArgs: Array<String> get() {
-        val solutionConfiguration = SolutionConfigurationManager.getInstance(project).activeConfigurationAndPlatform
-        if (solutionConfiguration != null) {
-            val runManager = RunManager.getInstance(project)
-            val selectedConfiguration = runManager.selectedConfiguration?.configuration
-            if (selectedConfiguration is CppProjectConfiguration) {
-                val params = selectedConfiguration.parameters.parametersMap.getParametersForConfigurationAndPlatform(
-                    solutionConfiguration.configuration,
-                    solutionConfiguration.platform,
-                    "")
-                return ParametersListUtil.parseToArray(params.programParameters)
+    val defaultArgs: Array<String>
+        get() {
+            val solutionConfiguration = SolutionConfigurationManager.getInstance(project).activeConfigurationAndPlatform
+            if (solutionConfiguration != null) {
+                val runManager = RunManager.getInstance(project)
+                val selectedConfiguration = runManager.selectedConfiguration?.configuration
+                if (selectedConfiguration is CppProjectConfiguration) {
+                    val params =
+                        selectedConfiguration.parameters.parametersMap.getParametersForConfigurationAndPlatform(
+                            solutionConfiguration.configuration,
+                            solutionConfiguration.platform,
+                            ""
+                        )
+                    return ParametersListUtil.parseToArray(params.programParameters)
+                }
+                if (selectedConfiguration is DotNetProjectConfiguration) {
+                    return ParametersListUtil.parseToArray(selectedConfiguration.parameters.programParameters)
+                }
             }
-            if (selectedConfiguration is DotNetProjectConfiguration) {
-                return ParametersListUtil.parseToArray(selectedConfiguration.parameters.programParameters)
-            }
+            return arrayOf()
         }
-        return arrayOf()
-    }
 
-    val argumentsString: String get() {
-        return arguments.joinToString(" ")
-    }
+    val argumentsString: String
+        get() {
+            return arguments.joinToString(" ")
+        }
 }

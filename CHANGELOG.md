@@ -4,6 +4,13 @@
 
 ## Unreleased
 
+### Added
+- New toolwindow icon
+- Configurable shortcuts
+
+### Changed
+- Improvements for single choice groups
+
 ## 1.2.0 - 2023-04-05
 
 ### Fixed

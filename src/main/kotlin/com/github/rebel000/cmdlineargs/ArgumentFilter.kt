@@ -50,4 +50,12 @@ open class ArgumentFilter(project: Project) {
         }
         return super.equals(other)
     }
+
+    override fun hashCode(): Int {
+        var result = activeSolutionConfigurationAndPlatform?.hashCode() ?: 0
+        result = 31 * result + configuration.hashCode()
+        result = 31 * result + platform.hashCode()
+        result = 31 * result + runConfiguration.hashCode()
+        return result
+    }
 }

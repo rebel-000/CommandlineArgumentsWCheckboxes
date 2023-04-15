@@ -13,7 +13,10 @@ import com.jetbrains.rider.runtime.DotNetExecutable
 @Suppress("unused")
 class RiderConfigurationExecutorExtension : RiderConfigurationExecutorExtension {
     private var nextExecutor: RiderConfigurationExecutorExtension? = null
-    override suspend fun canExecute(lifetime: Lifetime, hotReloadRunInfo: RuntimeHotReloadRunConfigurationInfo): Boolean {
+    override suspend fun canExecute(
+        lifetime: Lifetime,
+        hotReloadRunInfo: RuntimeHotReloadRunConfigurationInfo
+    ): Boolean {
         val argsService = ArgumentsService.getInstance(hotReloadRunInfo.project)
         if (argsService.shouldOverride || argsService.arguments.isNotEmpty()) {
             val extensions = RiderConfigurationExecutorExtension.EP_NAME.getExtensions(hotReloadRunInfo.project)
@@ -23,7 +26,11 @@ class RiderConfigurationExecutorExtension : RiderConfigurationExecutorExtension 
         return false
     }
 
-    override fun executor(project: Project, environment: ExecutionEnvironment, parameters: DotNetProjectConfigurationParameters): DotNetExecutable {
+    override fun executor(
+        project: Project,
+        environment: ExecutionEnvironment,
+        parameters: DotNetProjectConfigurationParameters
+    ): DotNetExecutable {
         val argsService = ArgumentsService.getInstance(project)
         val parametersCopy = parameters.copy()
         parametersCopy.envs += Pair(COMMANDLINE_PATCHED, "1")

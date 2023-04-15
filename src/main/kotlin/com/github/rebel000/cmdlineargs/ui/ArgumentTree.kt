@@ -2,33 +2,50 @@ package com.github.rebel000.cmdlineargs.ui
 
 import com.github.rebel000.cmdlineargs.ArgumentFilter
 import com.github.rebel000.cmdlineargs.ArgumentsService
+import com.github.rebel000.cmdlineargs.TOOLWINDOW_ID
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
 import com.intellij.ide.dnd.TransferableList
-import com.intellij.openapi.actionSystem.*
 import com.intellij.openapi.project.Project
-import com.intellij.ui.*
+import com.intellij.openapi.wm.ToolWindowManager
+import com.intellij.ui.CheckboxTree
+import com.intellij.ui.CheckedTreeNode
+import com.intellij.ui.RowsDnDSupport
 import com.intellij.util.ui.EditableModel
 import com.jetbrains.rider.projectView.solutionDirectory
 import com.jetbrains.rider.projectView.solutionName
 import java.awt.datatransfer.Transferable
 import java.io.File
 import java.util.*
-import javax.swing.*
+import javax.swing.JComponent
+import javax.swing.JTree
+import javax.swing.TransferHandler
 import javax.swing.event.TreeExpansionEvent
 import javax.swing.event.TreeExpansionListener
 import javax.swing.event.TreeModelEvent
 import javax.swing.event.TreeModelListener
-import javax.swing.tree.*
-import kotlin.collections.ArrayList
+import javax.swing.tree.DefaultTreeModel
+import javax.swing.tree.TreePath
 import kotlin.math.min
 
-@Suppress("DialogTitleCapitalization")
 class ArgumentTree(private val project: Project) :
     CheckboxTree(ArgumentTreeCellRenderer(), null, CheckPolicy(true, true, true, true)),
     TreeModelListener,
     TreeExpansionListener {
+    companion object {
+        fun getInstance(project: Project?): ArgumentTree? {
+            if (project == null || project.isDisposed) {
+                return null
+            }
+            val component = ToolWindowManager.getInstance(project).getToolWindow(TOOLWINDOW_ID)
+                ?.contentManagerIfCreated
+                ?.selectedContent
+                ?.component
+            return if (component != null && component is ArgumentTreeView) component.tree else null
+        }
+    }
+
     private val argsService = ArgumentsService.getInstance(project)
     private val settingsFileName: String = project.solutionDirectory.path + "/" + project.solutionName + ".ddargs.json"
     private val rootNode = ArgumentTreeRootNode()
@@ -40,8 +57,7 @@ class ArgumentTree(private val project: Project) :
         set(value) {
             if (value) {
                 lockedCounter++
-            }
-            else if (lockedCounter > 0) {
+            } else if (lockedCounter > 0) {
                 lockedCounter--
             }
         }
@@ -143,12 +159,15 @@ class ArgumentTree(private val project: Project) :
 
     fun selectedNodes(sorted: Boolean = false): Array<ArgumentTreeNode> {
         if (sorted) {
-            val sortedSelectionRows = selectionRows.sorted()
-            val selectedNodes = ArrayList<ArgumentTreeNode>(sortedSelectionRows.count())
-            for (row in sortedSelectionRows) {
-                selectedNodes.add(getPathForRow(row).lastPathComponent as ArgumentTreeNode)
+            if (selectionRows?.isNotEmpty() == true) {
+                val sortedSelectionRows = selectionRows!!.sorted()
+                val selectedNodes = ArrayList<ArgumentTreeNode>(sortedSelectionRows.count())
+                for (row in sortedSelectionRows) {
+                    selectedNodes.add(getPathForRow(row).lastPathComponent as ArgumentTreeNode)
+                }
+                return selectedNodes.toArray(arrayOf())
             }
-            return selectedNodes.toArray(arrayOf())
+            return arrayOf()
         }
         return getSelectedNodes(ArgumentTreeNode::class.java, null)
     }
@@ -237,8 +256,7 @@ class ArgumentTree(private val project: Project) :
         if (!isLocked) {
             saveState()
             rebuildArgs()
-        }
-        else {
+        } else {
             hasChanges = true
         }
     }
@@ -346,7 +364,7 @@ class ArgumentTree(private val project: Project) :
                 position == RowsDnDSupport.RefinedDropSupport.Position.ABOVE
             )
             val folderPath = folder.path
-            val selectedNodes = selectedNodes(true).filter{ n -> !folderPath.contains(n) }.toTypedArray()
+            val selectedNodes = selectedNodes(true).filter { n -> !folderPath.contains(n) }.toTypedArray()
             val moveNodes = selectedNodes.filter { n -> !n.checkIsAncestorIn(selectedNodes) }
             val newSelectionPaths = ArrayList<TreePath>(moveNodes.count())
             for (node in moveNodes) {
@@ -369,7 +387,7 @@ class ArgumentTree(private val project: Project) :
                 }
             }
             expandPath(TreePath(folder.path))
-            selectionPaths = newSelectionPaths.toArray(arrayOf());
+            selectionPaths = newSelectionPaths.toArray(arrayOf())
             unlock()
         }
     }
