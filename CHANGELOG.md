@@ -4,6 +4,8 @@
 
 ## Unreleased
 
+## 1.2.1 - 2023-04-19
+
 ### Added
 - New toolwindow icon
 - Configurable shortcuts
