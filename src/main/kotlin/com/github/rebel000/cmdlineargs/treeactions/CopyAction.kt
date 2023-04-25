@@ -1,13 +1,13 @@
 package com.github.rebel000.cmdlineargs.treeactions
 
 import com.github.rebel000.cmdlineargs.ui.ArgumentTree
-import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.ide.CopyPasteManager
+import icons.com.github.rebel000.cmdlineargs.treeactions.TreeActionBase
 import java.awt.datatransfer.StringSelection
 import java.util.*
 
-class CopyAction : AnAction() {
+class CopyAction : TreeActionBase() {
     override fun actionPerformed(e: AnActionEvent) {
         val tree = ArgumentTree.getInstance(e.project) ?: return
         val nodes = tree.selectedNodes(false)

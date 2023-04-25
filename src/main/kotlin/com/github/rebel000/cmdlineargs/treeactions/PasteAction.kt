@@ -2,13 +2,13 @@ package com.github.rebel000.cmdlineargs.treeactions
 
 import com.github.rebel000.cmdlineargs.ui.ArgumentTree
 import com.github.rebel000.cmdlineargs.ui.ArgumentTreeNode
-import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.ide.CopyPasteManager
+import icons.com.github.rebel000.cmdlineargs.treeactions.TreeActionBase
 import java.awt.datatransfer.DataFlavor
 import kotlin.math.max
 
-class PasteAction : AnAction() {
+class PasteAction : TreeActionBase() {
     override fun actionPerformed(e: AnActionEvent) {
         val tree = ArgumentTree.getInstance(e.project) ?: return
         val str = CopyPasteManager.getInstance().getContents<String?>(DataFlavor.stringFlavor)

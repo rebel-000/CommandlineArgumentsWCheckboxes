@@ -1,24 +1,28 @@
 package com.github.rebel000.cmdlineargs.treeactions
 
 import com.github.rebel000.cmdlineargs.ArgumentsService
-import com.github.rebel000.cmdlineargs.Resources
+import com.github.rebel000.cmdlineargs.TOOLWINDOW_ID
 import com.github.rebel000.cmdlineargs.ui.ArgumentTree
-import com.intellij.icons.AllIcons
 import com.intellij.openapi.actionSystem.ActionUpdateThread
 import com.intellij.openapi.actionSystem.AnActionEvent
-import com.intellij.ui.ToggleActionButton
+import com.intellij.openapi.actionSystem.PlatformDataKeys
+import com.intellij.openapi.actionSystem.ToggleAction
 
-class OverrideBaseParameters :
-    ToggleActionButton(Resources.message("action.cmdlineargs.shouldOverride.text"), AllIcons.Actions.Lightning) {
-    override fun isSelected(e: AnActionEvent?): Boolean {
-        val project = (e ?: return false).project ?: return false
+class OverrideBaseParameters : ToggleAction() {
+    override fun isSelected(e: AnActionEvent): Boolean {
+        val project = e.project ?: return false
         return ArgumentsService.getInstance(project).shouldOverride
     }
 
-    override fun setSelected(e: AnActionEvent?, state: Boolean) {
-        val project = (e ?: return).project ?: return
+    override fun setSelected(e: AnActionEvent, state: Boolean) {
+        val project = e.project ?: return
         ArgumentsService.getInstance(project).shouldOverride = state
         ArgumentTree.getInstance(project)?.saveState()
+    }
+
+    override fun update(e: AnActionEvent) {
+        val toolWindow = e.dataContext.getData(PlatformDataKeys.TOOL_WINDOW)
+        e.presentation.isEnabled = toolWindow != null && toolWindow.id == TOOLWINDOW_ID
     }
 
     override fun getActionUpdateThread(): ActionUpdateThread {

@@ -4,6 +4,9 @@
 
 ## Unreleased
 
+### Fixed
+- Fixed #6 "Hitting Enter elsewhere in Rider may bring up "Argument Properties" dialog"
+
 ## 1.2.1 - 2023-04-19
 
 ### Added
