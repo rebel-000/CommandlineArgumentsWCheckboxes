@@ -4,6 +4,13 @@
 
 ## Unreleased
 
+### Changed
+- Show root handle to be able to add new arguments to the root set
+
+### Fixed
+- Fixed drag and drop
+- Fixed tree checkbox states
+
 ### Fixed
 - Fixed #6 "Hitting Enter elsewhere in Rider may bring up "Argument Properties" dialog"
 
