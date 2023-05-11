@@ -349,9 +349,6 @@ class ArgumentTree(private val project: Project) :
             val newSelectionPaths = ArrayList<TreePath>(moveNodes.count())
             for (node in moveNodes) {
                 val wasExpanded = isExpanded(TreePath(node.path))
-                if (folder.singleChoice) {
-                    setNodeState(node, false)
-                }
                 if (node.parent === folder && folder.getIndex(node) < index) {
                     removeNodeFromParent(node)
                     insertNodeInto(node, folder, index - 1)

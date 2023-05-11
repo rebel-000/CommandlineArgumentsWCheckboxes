@@ -240,6 +240,11 @@ open class ArgumentTreeNode(var name: String, var isFolder: Boolean) : com.intel
 
     override fun insert(newChild: MutableTreeNode?, childIndex: Int) {
         super.insert(newChild, childIndex)
+        if (newChild is ArgumentTreeNode) {
+            if (!isChecked || singleChoice && newChild.isChecked) {
+                newChild.uncheck()
+            }
+        }
         update()
     }
 
