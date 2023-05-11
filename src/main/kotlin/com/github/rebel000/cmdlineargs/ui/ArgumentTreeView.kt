@@ -19,11 +19,10 @@ class ArgumentTreeView(project: Project) : SimpleToolWindowPanel(true) {
         add(ToolbarDecorator.createDecorator(tree).apply {
             setToolbarPosition(ActionToolbarPosition.TOP)
             setPanelBorder(JBUI.Borders.empty())
-            val actionManager = ActionManager.getInstance()
             addExtraActions(
-                actionManager.getAction(TOOLBAR_ACTION_ID)
+                ActionManager.getInstance().getAction(TOOLBAR_ACTION_ID)
             )
-        }.createPanel())
+        }.setForcedDnD().createPanel())
         tree.postInit()
     }
 
