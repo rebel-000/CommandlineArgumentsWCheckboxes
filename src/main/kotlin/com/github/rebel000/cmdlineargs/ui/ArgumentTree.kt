@@ -67,6 +67,8 @@ class ArgumentTree(private val project: Project) :
     }
 
     init {
+        isRootVisible = true
+        showsRootHandles = false
         model = ArgumentTreeModel()
         myModel.addTreeModelListener(this)
         addTreeExpansionListener(this)
