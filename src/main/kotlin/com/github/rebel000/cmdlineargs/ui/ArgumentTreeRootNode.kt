@@ -39,6 +39,10 @@ class ArgumentTreeRootNode : ArgumentTreeNode(Resources.message("toolwindow.root
         return super.fromJson(json)
     }
 
+    override fun isChecked(): Boolean {
+        return true
+    }
+
     override fun toString(): String {
         return ArgumentTreeRootNode::class.java.name
     }

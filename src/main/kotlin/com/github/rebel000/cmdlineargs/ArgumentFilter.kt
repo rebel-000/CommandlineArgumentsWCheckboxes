@@ -13,7 +13,7 @@ open class ArgumentFilter(project: Project) {
     private val runConfiguration = RunManager.getInstance(project).selectedConfiguration?.name.orEmpty()
 
     fun check(node: ArgumentTreeNode): Boolean {
-        var result = node.isChecked || node.isFolder
+        var result = node.isChecked
         if (result && node.filters.configuration.isNotEmpty()) {
             val filters = node.filters.configuration.split(";")
             result = filters.find { filter -> checkPattern(configuration, filter) } != null

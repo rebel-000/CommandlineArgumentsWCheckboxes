@@ -3,13 +3,19 @@ package com.github.rebel000.cmdlineargs.ui
 import com.github.rebel000.cmdlineargs.ArgumentFilter
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
+import com.intellij.util.ui.ThreeStateCheckBox
 import java.util.*
+import javax.swing.tree.MutableTreeNode
 import javax.swing.tree.TreeNode
 
 open class ArgumentTreeNode(var name: String, var isFolder: Boolean) : com.intellij.ui.CheckedTreeNode() {
+    private var privateState: ThreeStateCheckBox.State = ThreeStateCheckBox.State.SELECTED
     var singleChoice: Boolean = false
     var filters: Filters = Filters()
     var isExpanded: Boolean = false
+
+    val state: ThreeStateCheckBox.State
+        get() = privateState
 
     fun findAncestorIn(nodes: Array<ArgumentTreeNode>): ArgumentTreeNode? {
         var node = getParent()
@@ -85,15 +91,18 @@ open class ArgumentTreeNode(var name: String, var isFolder: Boolean) : com.intel
             val items = json.getAsJsonArray("items")
             if (items != null) {
                 isFolder = true
+                children = Vector(items.size())
                 for (item in items) {
                     if (item.isJsonObject) {
                         val childNode = ArgumentTreeNode("", false).fromJson(item.asJsonObject)
                         if (childNode != null) {
-                            add(childNode)
+                            childNode.setParent(this)
+                            children.insertElementAt(childNode, childCount)
                         }
                     }
                 }
             }
+            update()
             return this
         }
         return null
@@ -119,20 +128,128 @@ open class ArgumentTreeNode(var name: String, var isFolder: Boolean) : com.intel
         return super.children() as Enumeration<ArgumentTreeNode>
     }
 
-    override fun isChecked(): Boolean {
+    private fun updateSingleChoice(checkedNode: ArgumentTreeNode) {
+        if (singleChoice) {
+            for (child in childrenArgs()) {
+                if (child != checkedNode) {
+                    child.uncheck()
+                }
+            }
+        }
+    }
+
+    private fun update() {
+        var newState: ThreeStateCheckBox.State = ThreeStateCheckBox.State.NOT_SELECTED
         if (singleChoice) {
             for (child in childrenArgs()) {
                 if (child.isChecked) {
-                    return true
+                    newState = child.state
+                    break
                 }
             }
-            return false
+        } else if (isFolder && childCount > 0) {
+            var result: ThreeStateCheckBox.State? = null
+            for (child in childrenArgs()) {
+                val childStatus = child.state
+                if (childStatus == ThreeStateCheckBox.State.DONT_CARE) {
+                    result = ThreeStateCheckBox.State.DONT_CARE
+                    break
+                }
+                if (result == null) {
+                    result = childStatus
+                } else if (result != childStatus) {
+                    result = ThreeStateCheckBox.State.DONT_CARE
+                    break
+                }
+            }
+            newState = result ?: ThreeStateCheckBox.State.NOT_SELECTED
+        } else if (isChecked) {
+            newState = ThreeStateCheckBox.State.SELECTED
         }
-        return super.isChecked()
+        if (privateState != newState) {
+            privateState = newState
+            isChecked = privateState != ThreeStateCheckBox.State.NOT_SELECTED
+            val p = getParent()
+            p?.updateSingleChoice(this)
+            p?.update()
+        }
+    }
+
+    private fun check() {
+        if (isFolder && childCount > 0) {
+            if (singleChoice) {
+                if (privateState == ThreeStateCheckBox.State.NOT_SELECTED) {
+                    val child = getChildAt(0)!!
+                    child.check()
+                    privateState = child.state
+                } else {
+                    for (child in childrenArgs()) {
+                        if (child.isChecked) {
+                            child.check()
+                            privateState = child.state
+                            break
+                        }
+                    }
+                }
+            } else {
+                var result: ThreeStateCheckBox.State? = null
+                for (child in childrenArgs()) {
+                    child.check()
+                    val childStatus = child.state
+                    if (childStatus == ThreeStateCheckBox.State.DONT_CARE) {
+                        result = ThreeStateCheckBox.State.DONT_CARE
+                        break
+                    }
+                    if (result == null) {
+                        result = childStatus
+                    } else if (result != childStatus) {
+                        result = ThreeStateCheckBox.State.DONT_CARE
+                        break
+                    }
+                }
+                privateState = result ?: ThreeStateCheckBox.State.NOT_SELECTED
+            }
+        } else {
+            privateState = ThreeStateCheckBox.State.SELECTED
+        }
+        isChecked = privateState != ThreeStateCheckBox.State.NOT_SELECTED
+    }
+
+    private fun uncheck() {
+        if (childCount > 0) {
+            for (child in childrenArgs()) {
+                child.uncheck()
+            }
+        }
+        isChecked = false
+        privateState = ThreeStateCheckBox.State.NOT_SELECTED
+    }
+
+    override fun setChecked(checked: Boolean) {
+        if (isChecked != checked) {
+            if (checked || state == ThreeStateCheckBox.State.DONT_CARE) {
+                check()
+            } else {
+                uncheck()
+            }
+            val p = getParent()
+            p?.updateSingleChoice(this)
+            p?.update()
+        }
+    }
+
+    override fun insert(newChild: MutableTreeNode?, childIndex: Int) {
+        super.insert(newChild, childIndex)
+        update()
     }
 
     override fun getParent(): ArgumentTreeNode? {
         return super.getParent() as ArgumentTreeNode?
+    }
+
+    override fun setParent(newParent: MutableTreeNode?) {
+        getParent()?.update()
+        super.setParent(newParent)
     }
 
     override fun toString(): String {

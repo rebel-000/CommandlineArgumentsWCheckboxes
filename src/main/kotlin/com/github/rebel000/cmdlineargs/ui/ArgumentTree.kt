@@ -30,7 +30,7 @@ import javax.swing.tree.TreePath
 import kotlin.math.min
 
 class ArgumentTree(private val project: Project) :
-    CheckboxTree(ArgumentTreeCellRenderer(), null, CheckPolicy(true, true, true, true)),
+    CheckboxTree(ArgumentTreeCellRenderer(), null, CheckPolicy(false, false, false, false)),
     TreeModelListener,
     TreeExpansionListener {
     companion object {
@@ -89,7 +89,6 @@ class ArgumentTree(private val project: Project) :
 
             override fun getSourceActions(c: JComponent) = COPY_OR_MOVE
         }
-
         reloadState()
     }
 
@@ -111,7 +110,7 @@ class ArgumentTree(private val project: Project) :
             if (node.isFolder) {
                 var firstCheckedFound = false
                 if (node.singleChoice) {
-                    for (child in node.childrenArgs().toList()) {
+                    for (child in node.childrenArgs()) {
                         if (child.isChecked) {
                             if (firstCheckedFound) {
                                 setNodeState(child, false)
@@ -125,7 +124,7 @@ class ArgumentTree(private val project: Project) :
                 if (node.childCount > 0) {
                     val folder = node.parent!!
                     var index = folder.getIndex(node) + 1
-                    for (child in node.childrenArgs().toList()) {
+                    for (child in node.childrenArgs()) {
                         removeNode(child)
                         insertNode(child, folder, index)
                         index++
@@ -266,27 +265,6 @@ class ArgumentTree(private val project: Project) :
     override fun onDoubleClick(node: CheckedTreeNode?) {
         if (node != null) {
             editNode(node as ArgumentTreeNode)
-        }
-    }
-
-    override fun onNodeStateChanged(node: CheckedTreeNode?) {
-        if (node is ArgumentTreeNode) {
-            if (!isLocked && node.isChecked) {
-                lock()
-                if (node.singleChoice) {
-                    setNodeState(node, false)
-                } else {
-                    val parent = node.parent
-                    if (parent?.singleChoice == true) {
-                        for (child in parent.childrenArgs()) {
-                            if (child !== node) {
-                                setNodeState(child, false)
-                            }
-                        }
-                    }
-                }
-                unlock()
-            }
         }
     }
 
