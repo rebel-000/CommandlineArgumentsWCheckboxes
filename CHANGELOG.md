@@ -5,6 +5,7 @@
 ## Unreleased
 
 ### Changed
+- Use radio buttons for single choice group items
 - Show root handle to be able to add new arguments to the root set
 
 ### Fixed

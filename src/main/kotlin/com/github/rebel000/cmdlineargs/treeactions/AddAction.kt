@@ -14,11 +14,6 @@ class AddAction : TreeActionBase() {
         if (ArgumentPropertiesDialog(newNode).showAndGet()) {
             tree.addNode(newNode, tree.selectedNode())
             tree.expandPath(TreePath(newNode.parent!!.path))
-            if (newNode.parent?.singleChoice == true) {
-                tree.lock()
-                tree.setNodeState(newNode, false)
-                tree.unlock()
-            }
         }
     }
 }
