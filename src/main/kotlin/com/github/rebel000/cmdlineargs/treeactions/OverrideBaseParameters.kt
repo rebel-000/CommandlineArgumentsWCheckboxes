@@ -15,9 +15,9 @@ class OverrideBaseParameters : ToggleAction() {
     }
 
     override fun setSelected(e: AnActionEvent, state: Boolean) {
-        val project = e.project ?: return
-        ArgumentsService.getInstance(project).shouldOverride = state
-        ArgumentTree.getInstance(project)?.saveState()
+        val argsService = ArgumentsService.getInstance(e.project ?: return)
+        argsService.shouldOverride = state
+        argsService.saveState()
     }
 
     override fun update(e: AnActionEvent) {

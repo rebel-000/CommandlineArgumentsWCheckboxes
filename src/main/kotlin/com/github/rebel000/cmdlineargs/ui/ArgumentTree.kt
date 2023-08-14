@@ -1,11 +1,7 @@
 package com.github.rebel000.cmdlineargs.ui
 
-import com.github.rebel000.cmdlineargs.ArgumentFilter
 import com.github.rebel000.cmdlineargs.ArgumentsService
 import com.github.rebel000.cmdlineargs.TOOLWINDOW_ID
-import com.google.gson.JsonArray
-import com.google.gson.JsonObject
-import com.google.gson.JsonParser
 import com.intellij.ide.dnd.TransferableList
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.wm.ToolWindowManager
@@ -13,11 +9,7 @@ import com.intellij.ui.CheckboxTree
 import com.intellij.ui.CheckedTreeNode
 import com.intellij.ui.RowsDnDSupport
 import com.intellij.util.ui.EditableModel
-import com.jetbrains.rider.projectView.solutionDirectory
-import com.jetbrains.rider.projectView.solutionName
 import java.awt.datatransfer.Transferable
-import java.io.File
-import java.util.*
 import javax.swing.JComponent
 import javax.swing.JTree
 import javax.swing.TransferHandler
@@ -29,7 +21,7 @@ import javax.swing.tree.DefaultTreeModel
 import javax.swing.tree.TreePath
 import kotlin.math.min
 
-class ArgumentTree(private val project: Project) :
+class ArgumentTree(project: Project) :
     CheckboxTree(ArgumentTreeCellRenderer(), null, CheckPolicy(false, false, false, false)),
     TreeModelListener,
     TreeExpansionListener {
@@ -47,24 +39,13 @@ class ArgumentTree(private val project: Project) :
     }
 
     private val argsService = ArgumentsService.getInstance(project)
-    private val settingsFileName: String = project.solutionDirectory.path + "/" + project.solutionName + ".ddargs.json"
-    private val rootNode = ArgumentTreeRootNode()
     private var lockedCounter: Int = 0
     private var hasChanges = false
     private val myModel: ArgumentTreeModel get() = model as ArgumentTreeModel
-    private var isLocked: Boolean
+    private val isLocked
         get() = lockedCounter > 0
-        set(value) {
-            if (value) {
-                lockedCounter++
-            } else if (lockedCounter > 0) {
-                lockedCounter--
-            }
-        }
-
-    override fun setTransferHandler(handler: TransferHandler?) {
-        super.setTransferHandler(handler)
-    }
+    private val rootNode
+        get() = argsService.rootNode
 
     init {
         isRootVisible = true
@@ -89,7 +70,12 @@ class ArgumentTree(private val project: Project) :
 
             override fun getSourceActions(c: JComponent) = COPY_OR_MOVE
         }
-        reloadState()
+        postLoad()
+    }
+
+    fun postLoad() {
+        myModel.reload()
+        restoreExpandState(argsService.rootNode)
     }
 
     fun addNode(node: ArgumentTreeNode, parent: ArgumentTreeNode? = null) {
@@ -193,40 +179,6 @@ class ArgumentTree(private val project: Project) :
         return InsertPosition(rootNode, rootNode.childCount)
     }
 
-    fun saveState() {
-        if (!isLocked) {
-            val jObject = JsonObject()
-            val items = JsonArray(rootNode.childCount)
-            for (child in rootNode.childrenArgs()) {
-                items.add(child.toJson())
-            }
-            jObject.addProperty("version", 1)
-            jObject.addProperty("override", argsService.shouldOverride)
-            jObject.add("items", items)
-            File(settingsFileName).writeText(jObject.toString())
-        }
-    }
-
-    fun reloadState() {
-        lock()
-        val settingsFile = File(settingsFileName)
-        if (settingsFile.exists()) {
-            val jsonString = settingsFile.readText()
-            val jObject = JsonParser.parseString(jsonString).asJsonObject
-            val version = jObject.get("version")
-            if (version != null && version.asInt == 1) {
-                rootNode.removeAllChildren()
-                argsService.shouldOverride = jObject.get("override")?.asBoolean == true
-                rootNode.fromJson(jObject)
-            }
-            myModel.reload()
-            restoreExpandState(rootNode)
-        }
-        hasChanges = false
-        unlock()
-        rebuildArgs()
-    }
-
     private fun restoreExpandState(node: ArgumentTreeNode) {
         if (node.isExpanded) {
             expandNode(node, false)
@@ -237,26 +189,23 @@ class ArgumentTree(private val project: Project) :
     }
 
     fun lock() {
-        isLocked = true
+        lockedCounter++
     }
 
     fun unlock() {
-        isLocked = false
-        if (hasChanges) {
-            treeChanged()
-            hasChanges = false
+        if (lockedCounter > 0) {
+            lockedCounter--
+            if (lockedCounter == 0 && hasChanges) {
+                treeChanged()
+                hasChanges = false
+            }
         }
-    }
-
-    private fun rebuildArgs() {
-        argsService.arguments = Vector()
-        rootNode.getArgs(argsService.arguments as Vector<String>, ArgumentFilter(project))
     }
 
     private fun treeChanged() {
         if (!isLocked) {
-            saveState()
-            rebuildArgs()
+            argsService.saveState()
+            argsService.rebuildArgs()
         } else {
             hasChanges = true
         }
