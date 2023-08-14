@@ -4,6 +4,9 @@
 
 ## Unreleased
 
+### Fixed
+- Args loading if toolwindow is hidden
+
 ## 1.3.1 - 2023-08-02
 
 ### Changed
