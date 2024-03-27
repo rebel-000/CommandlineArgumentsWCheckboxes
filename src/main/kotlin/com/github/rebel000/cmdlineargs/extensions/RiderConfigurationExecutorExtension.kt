@@ -26,10 +26,11 @@ class RiderConfigurationExecutorExtension : RiderConfigurationExecutorExtension 
         return false
     }
 
-    override fun executor(
+    override suspend fun executor(
         project: Project,
         environment: ExecutionEnvironment,
-        parameters: DotNetProjectConfigurationParameters
+        parameters: DotNetProjectConfigurationParameters,
+        hotReloadRunInfo: RuntimeHotReloadRunConfigurationInfo
     ): DotNetExecutable {
         val argsService = ArgumentsService.getInstance(project)
         val parametersCopy = parameters.copy()
@@ -39,7 +40,7 @@ class RiderConfigurationExecutorExtension : RiderConfigurationExecutorExtension 
         } else {
             parametersCopy.programParameters = parametersCopy.programParameters + " " + argsService.argumentsString
         }
-        val executable = nextExecutor?.executor(project, environment, parametersCopy)
+        val executable = nextExecutor?.executor(project, environment, parametersCopy, hotReloadRunInfo)
         nextExecutor = null
         return executable ?: parametersCopy.toDotNetExecutable()
     }
