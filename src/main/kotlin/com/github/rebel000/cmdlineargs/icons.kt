@@ -1,4 +1,4 @@
-package icons
+package com.github.rebel000.cmdlineargs
 
 import com.intellij.openapi.util.IconLoader
 

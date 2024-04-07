@@ -1,32 +1,21 @@
 package com.github.rebel000.cmdlineargs
 
 import com.github.rebel000.cmdlineargs.ui.ArgumentTreeNode
-import com.intellij.execution.RunManager
-import com.intellij.openapi.project.Project
-import com.jetbrains.rider.projectView.SolutionConfigurationManager
 
-open class ArgumentFilter(project: Project) {
-    private val activeSolutionConfigurationAndPlatform =
-        SolutionConfigurationManager.getInstance(project).activeConfigurationAndPlatform
-    private val configuration = activeSolutionConfigurationAndPlatform?.configuration.orEmpty()
-    private val platform = activeSolutionConfigurationAndPlatform?.platform.orEmpty()
-    private val runConfiguration = RunManager.getInstance(project).selectedConfiguration?.name.orEmpty()
-
+open class ArgumentFilter(private val configuration: String?, private val platform: String?, private val runConfiguration: String?) {
     fun check(node: ArgumentTreeNode): Boolean {
-        var result = node.isChecked
-        if (result && node.filters.configuration.isNotEmpty()) {
-            val filters = node.filters.configuration.split(";")
-            result = filters.find { filter -> checkPattern(configuration, filter) } != null
+        return node.isChecked
+            && checkFilter(configuration, node.filters.configuration)
+            && checkFilter(platform, node.filters.platform)
+            && checkFilter(runConfiguration, node.filters.runConfiguration)
+    }
+    
+    private fun checkFilter(configField: String?, filterField: String): Boolean {
+        if (configField != null && filterField.isNotEmpty()) {
+            val filters = filterField.split(";")
+            return filters.find { filter -> checkPattern(configField, filter) } != null
         }
-        if (result && node.filters.platform.isNotEmpty()) {
-            val filters = node.filters.platform.split(";")
-            result = filters.find { filter -> checkPattern(platform, filter) } != null
-        }
-        if (result && node.filters.runConfiguration.isNotEmpty()) {
-            val filters = node.filters.runConfiguration.split(";")
-            result = filters.find { filter -> checkPattern(runConfiguration, filter) } != null
-        }
-        return result
+        return true
     }
 
     private fun checkPattern(str: String, pattern: String): Boolean {
@@ -40,22 +29,5 @@ open class ArgumentFilter(project: Project) {
         }
 
         return str == pattern
-    }
-
-    override fun equals(other: Any?): Boolean {
-        if (other is ArgumentFilter) {
-            return configuration == other.configuration
-                    && platform == other.platform
-                    && runConfiguration == other.runConfiguration
-        }
-        return super.equals(other)
-    }
-
-    override fun hashCode(): Int {
-        var result = activeSolutionConfigurationAndPlatform?.hashCode() ?: 0
-        result = 31 * result + configuration.hashCode()
-        result = 31 * result + platform.hashCode()
-        result = 31 * result + runConfiguration.hashCode()
-        return result
     }
 }

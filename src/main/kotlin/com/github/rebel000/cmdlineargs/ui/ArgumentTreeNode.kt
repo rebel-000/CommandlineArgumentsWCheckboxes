@@ -6,34 +6,31 @@ import com.google.gson.JsonObject
 import com.intellij.util.ui.ThreeStateCheckBox
 import java.util.*
 import javax.swing.tree.MutableTreeNode
-import javax.swing.tree.TreeNode
 
-open class ArgumentTreeNode(var name: String, var isFolder: Boolean) : com.intellij.ui.CheckedTreeNode() {
+open class ArgumentTreeNode(var name: String, var isFolder: Boolean, val readonly: Boolean) : com.intellij.ui.CheckedTreeNode() {
     private var privateState: ThreeStateCheckBox.State = ThreeStateCheckBox.State.SELECTED
     var singleChoice: Boolean = false
     var filters: Filters = Filters()
-    var isExpanded: Boolean = false
+    var isExpanded: Boolean = true
 
     val state: ThreeStateCheckBox.State
         get() = privateState
 
-    fun findAncestorIn(nodes: Array<ArgumentTreeNode>): ArgumentTreeNode? {
-        var node = getParent()
-        while (node != null && !nodes.contains(node)) {
-            node = node.getParent()
+    fun checkIsAncestorIn(nodes: List<ArgumentTreeNode>): Boolean {
+        var node = parent
+        while (node is ArgumentTreeNode && !nodes.contains(node)) {
+            node = node.parent
         }
-        return node
-    }
-
-    fun checkIsAncestorIn(nodes: Array<ArgumentTreeNode>): Boolean {
-        return findAncestorIn(nodes) != null
+        return node != null
     }
 
     fun toStrings(out: Vector<String>, indent: Int) {
-        out.ensureCapacity(out.size + childCount + 1)
-        out.add("\t".repeat(indent) + name)
-        for (child in childrenArgs()) {
-            child.toStrings(out, indent + 1)
+        if (!readonly && (!isFolder || childCount > 0)) {
+            out.ensureCapacity(out.size + childCount + 1)
+            out.add("\t".repeat(indent) + name)
+        }
+        forEachArg {
+            it.toStrings(out, indent + 1)
         }
     }
 
@@ -41,8 +38,8 @@ open class ArgumentTreeNode(var name: String, var isFolder: Boolean) : com.intel
         if (filter.check(this)) {
             out.ensureCapacity(out.size + childCount + 1)
             if (isFolder) {
-                for (child in childrenArgs()) {
-                    child.getArgs(out, filter)
+                forEachArg {
+                    it.getArgs(out, filter)
                 }
             } else {
                 out.add(name)
@@ -68,14 +65,14 @@ open class ArgumentTreeNode(var name: String, var isFolder: Boolean) : com.intel
         if (isFolder) {
             val items = JsonArray(childCount)
             result.add("items", items)
-            for (child in childrenArgs()) {
-                items.add(child.toJson())
+            forEachArg {
+                items.add(it.toJson())
             }
         }
         return result
     }
 
-    open fun fromJson(json: JsonObject): ArgumentTreeNode? {
+    open fun fromJson(json: JsonObject): Boolean {
         val nameProperty = json.get("name")
         if (nameProperty != null) {
             name = nameProperty.asString
@@ -94,8 +91,8 @@ open class ArgumentTreeNode(var name: String, var isFolder: Boolean) : com.intel
                 children = Vector(items.size())
                 for (item in items) {
                     if (item.isJsonObject) {
-                        val childNode = ArgumentTreeNode("", false).fromJson(item.asJsonObject)
-                        if (childNode != null) {
+                        val childNode = ArgumentTreeNode("", false, readonly = false)
+                        if (childNode.fromJson(item.asJsonObject)) {
                             childNode.setParent(this)
                             children.insertElementAt(childNode, childCount)
                         }
@@ -103,36 +100,26 @@ open class ArgumentTreeNode(var name: String, var isFolder: Boolean) : com.intel
                 }
             }
             update()
-            return this
+            return true
         }
-        return null
+        return false
     }
-
-    override fun getChildAt(index: Int): ArgumentTreeNode? {
-        if (children == null) {
-            throw ArrayIndexOutOfBoundsException("node has no children")
+    
+    fun forEachArg(f: (ArgumentTreeNode) -> Unit) {
+        if (children != null) {
+            for (child in children) {
+                if (child is ArgumentTreeNode) {
+                    f(child)
+                }
+            }
         }
-        return children.elementAt(index) as ArgumentTreeNode?
-    }
-
-    override fun getChildAfter(node: TreeNode): ArgumentTreeNode? {
-        return super.getChildAfter(node) as ArgumentTreeNode?
-    }
-
-    override fun getChildBefore(node: TreeNode): ArgumentTreeNode? {
-        return super.getChildBefore(node) as ArgumentTreeNode?
-    }
-
-    fun childrenArgs(): Enumeration<ArgumentTreeNode> {
-        @Suppress("UNCHECKED_CAST")
-        return super.children() as Enumeration<ArgumentTreeNode>
     }
 
     private fun updateSingleChoice(checkedNode: ArgumentTreeNode) {
         if (singleChoice) {
-            for (child in childrenArgs()) {
-                if (child != checkedNode) {
-                    child.uncheck()
+            forEachArg {
+                if (it != checkedNode) {
+                    it.uncheck()
                 }
             }
         }
@@ -141,25 +128,22 @@ open class ArgumentTreeNode(var name: String, var isFolder: Boolean) : com.intel
     private fun update() {
         var newState: ThreeStateCheckBox.State = ThreeStateCheckBox.State.NOT_SELECTED
         if (singleChoice) {
-            for (child in childrenArgs()) {
-                if (child.isChecked) {
+            for (child in children) {
+                if (child is ArgumentTreeNode && child.isChecked) {
                     newState = child.state
                     break
                 }
             }
         } else if (isFolder && childCount > 0) {
             var result: ThreeStateCheckBox.State? = null
-            for (child in childrenArgs()) {
-                val childStatus = child.state
-                if (childStatus == ThreeStateCheckBox.State.DONT_CARE) {
-                    result = ThreeStateCheckBox.State.DONT_CARE
-                    break
-                }
-                if (result == null) {
+            for (child in children) {
+                if (child is ArgumentTreeNode) {
+                    val childStatus = child.state
+                    if (childStatus == ThreeStateCheckBox.State.DONT_CARE || childStatus != (result ?: childStatus)) {
+                        result = ThreeStateCheckBox.State.DONT_CARE
+                        break
+                    }
                     result = childStatus
-                } else if (result != childStatus) {
-                    result = ThreeStateCheckBox.State.DONT_CARE
-                    break
                 }
             }
             newState = result ?: ThreeStateCheckBox.State.NOT_SELECTED
@@ -170,8 +154,10 @@ open class ArgumentTreeNode(var name: String, var isFolder: Boolean) : com.intel
             privateState = newState
             isChecked = privateState != ThreeStateCheckBox.State.NOT_SELECTED
             val p = getParent()
-            p?.updateSingleChoice(this)
-            p?.update()
+            if (p is ArgumentTreeNode) {
+                p.updateSingleChoice(this)
+                p.update()
+            }
         }
     }
 
@@ -179,32 +165,30 @@ open class ArgumentTreeNode(var name: String, var isFolder: Boolean) : com.intel
         if (isFolder && childCount > 0) {
             if (singleChoice) {
                 if (privateState == ThreeStateCheckBox.State.NOT_SELECTED) {
-                    val child = getChildAt(0)!!
+                    val child = getChildAt(0) as ArgumentTreeNode
                     child.check()
                     privateState = child.state
                 } else {
-                    for (child in childrenArgs()) {
-                        if (child.isChecked) {
-                            child.check()
-                            privateState = child.state
-                            break
+                    forEachArg {
+                        if (it.isChecked) {
+                            it.check()
+                            privateState = it.state
                         }
                     }
                 }
             } else {
                 var result: ThreeStateCheckBox.State? = null
-                for (child in childrenArgs()) {
-                    child.check()
-                    val childStatus = child.state
-                    if (childStatus == ThreeStateCheckBox.State.DONT_CARE) {
-                        result = ThreeStateCheckBox.State.DONT_CARE
-                        break
-                    }
-                    if (result == null) {
+                for (child in children) {
+                    if (child is ArgumentTreeNode) {
+                        child.check()
+                        val childStatus = child.state
+                        if (childStatus == ThreeStateCheckBox.State.DONT_CARE || childStatus != (result
+                                ?: childStatus)
+                        ) {
+                            result = ThreeStateCheckBox.State.DONT_CARE
+                            break
+                        }
                         result = childStatus
-                    } else if (result != childStatus) {
-                        result = ThreeStateCheckBox.State.DONT_CARE
-                        break
                     }
                 }
                 privateState = result ?: ThreeStateCheckBox.State.NOT_SELECTED
@@ -217,8 +201,8 @@ open class ArgumentTreeNode(var name: String, var isFolder: Boolean) : com.intel
 
     private fun uncheck() {
         if (childCount > 0) {
-            for (child in childrenArgs()) {
-                child.uncheck()
+            forEachArg {
+                it.uncheck()
             }
         }
         isChecked = false
@@ -233,8 +217,10 @@ open class ArgumentTreeNode(var name: String, var isFolder: Boolean) : com.intel
                 uncheck()
             }
             val p = getParent()
-            p?.updateSingleChoice(this)
-            p?.update()
+            if (p is ArgumentTreeNode) {
+                p.updateSingleChoice(this)
+                p.update()
+            }
         }
     }
 
@@ -248,17 +234,13 @@ open class ArgumentTreeNode(var name: String, var isFolder: Boolean) : com.intel
         update()
     }
 
-    override fun getParent(): ArgumentTreeNode? {
-        return super.getParent() as ArgumentTreeNode?
-    }
-
     override fun setParent(newParent: MutableTreeNode?) {
-        getParent()?.update()
+        (parent as? ArgumentTreeNode)?.update()
         super.setParent(newParent)
     }
 
     override fun toString(): String {
-        return name
+        return if (isFolder) "[${name}]" else name
     }
 
     class Filters {

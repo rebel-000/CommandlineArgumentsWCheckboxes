@@ -4,6 +4,16 @@
 
 ## Unreleased
 
+### Added
+- Shared arguments group
+- Inline arguments editor
+- Quick edit arguments (up/down to edit previous/next)
+- Not supported warning for not supported run configurations
+- Probably bugs, but not sure
+
+### Changed
+- Reworked arguments patching logic: for project other than c++ it now overrides program parameters directly in the run configuration to support more different project types (dotnet, exe, uwp)
+
 ## 1.3.4 - 2024-03-27
 
 ### Changed

@@ -1,16 +1,15 @@
 package com.github.rebel000.cmdlineargs.ui
 
 import com.github.rebel000.cmdlineargs.ArgumentFilter
-import com.github.rebel000.cmdlineargs.Resources
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import java.util.*
 
-class ArgumentTreeRootNode : ArgumentTreeNode(Resources.message("toolwindow.rootNode"), true) {
+class ArgumentTreeRootNode(name: String) : ArgumentTreeNode(name, isFolder = true, readonly = true) {
     override fun getArgs(out: Vector<String>, filter: ArgumentFilter) {
         out.ensureCapacity(out.size + childCount)
-        for (child in childrenArgs()) {
-            child.getArgs(out, filter)
+        forEachArg {
+            it.getArgs(out, filter)
         }
     }
 
@@ -18,32 +17,26 @@ class ArgumentTreeRootNode : ArgumentTreeNode(Resources.message("toolwindow.root
         val result = JsonObject()
         val items = JsonArray(childCount)
         result.add("items", items)
-        for (child in childrenArgs()) {
-            items.add(child.toJson())
+        forEachArg {
+            items.add(it.toJson())
         }
         return result
     }
 
-    override fun fromJson(json: JsonObject): ArgumentTreeNode? {
+    override fun fromJson(json: JsonObject): Boolean {
+        removeAllChildren()
         val items = json.getAsJsonArray("items")
         if (items != null) {
             for (item in items) {
                 if (item.isJsonObject) {
-                    val childNode = ArgumentTreeNode("", false).fromJson(item.asJsonObject)
-                    if (childNode != null) {
+                    val childNode = ArgumentTreeNode("", isFolder = false, readonly = false)
+                    if (childNode.fromJson(item.asJsonObject)) {
                         add(childNode)
                     }
                 }
             }
+            return true
         }
-        return super.fromJson(json)
-    }
-
-    override fun isChecked(): Boolean {
-        return true
-    }
-
-    override fun toString(): String {
-        return ArgumentTreeRootNode::class.java.name
+        return false
     }
 }

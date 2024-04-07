@@ -4,19 +4,18 @@ import com.github.rebel000.cmdlineargs.ui.ArgumentTree
 import com.github.rebel000.cmdlineargs.ui.ArgumentTreeNode
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.ide.CopyPasteManager
-import icons.com.github.rebel000.cmdlineargs.treeactions.TreeActionBase
 import java.awt.datatransfer.DataFlavor
 import kotlin.math.max
 
 class PasteAction : TreeActionBase() {
     override fun actionPerformed(e: AnActionEvent) {
         val tree = ArgumentTree.getInstance(e.project) ?: return
+        if (tree.isEditing) return
         val str = CopyPasteManager.getInstance().getContents<String?>(DataFlavor.stringFlavor)
         if (str != null) {
             val args = str.split("\n")
             val indentSize = getIndentSize(args)
             if (args.isNotEmpty()) {
-                tree.lock()
                 val (baseParent, baseIndex) = tree.getInsertPosition(tree.selectedNode())
                 val baseIndent = getIndent(args[0], indentSize)
                 var index = baseIndex
@@ -34,26 +33,26 @@ class PasteAction : TreeActionBase() {
                                 indent = currentIndent
                                 depth++
                                 index = 0
-                                tree.expandNode(parent, false)
+                                tree.expandNode(parent)
                             }
                         } else {
                             while (currentIndent < indent) {
-                                index = parent.parent!!.getIndex(parent) + 1
-                                parent = parent.parent!!
+                                val p = parent.parent as ArgumentTreeNode
+                                index = p.getIndex(parent) + 1
+                                parent = p
                                 indent--
                                 depth--
                             }
                         }
                     }
 
-                    node = ArgumentTreeNode(arg.trimStart(), false)
+                    node = ArgumentTreeNode(arg.trimStart(), isFolder = false, readonly = false)
                     tree.insertNode(node, parent, index++)
                     if (parent.singleChoice) {
                         tree.setNodeState(node, false)
                     }
                 }
-                tree.expandNode(baseParent, false)
-                tree.unlock()
+                tree.expandNode(baseParent)
             }
         }
     }

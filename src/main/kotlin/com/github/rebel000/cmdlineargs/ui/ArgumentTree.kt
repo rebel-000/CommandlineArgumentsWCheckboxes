@@ -1,66 +1,112 @@
 package com.github.rebel000.cmdlineargs.ui
 
 import com.github.rebel000.cmdlineargs.ArgumentsService
-import com.github.rebel000.cmdlineargs.TOOLWINDOW_ID
 import com.intellij.ide.dnd.TransferableList
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.wm.ToolWindowManager
-import com.intellij.ui.CheckboxTree
-import com.intellij.ui.CheckedTreeNode
-import com.intellij.ui.RowsDnDSupport
+import com.intellij.ui.*
 import com.intellij.util.ui.EditableModel
 import java.awt.datatransfer.Transferable
-import javax.swing.JComponent
-import javax.swing.JTree
-import javax.swing.TransferHandler
+import java.awt.event.*
+import javax.swing.*
 import javax.swing.event.TreeExpansionEvent
 import javax.swing.event.TreeExpansionListener
 import javax.swing.event.TreeModelEvent
 import javax.swing.event.TreeModelListener
 import javax.swing.tree.DefaultTreeModel
+import javax.swing.tree.MutableTreeNode
 import javax.swing.tree.TreePath
 import kotlin.math.min
 
-class ArgumentTree(project: Project) :
-    CheckboxTree(ArgumentTreeCellRenderer(), null, CheckPolicy(false, false, false, false)),
-    TreeModelListener,
-    TreeExpansionListener {
+class ArgumentTree(private val project: Project) : CheckboxTree(ArgumentTreeCellRenderer(), null, CHECK_POLICY) {
     companion object {
+        val CHECK_POLICY = CheckPolicy(false, false, false, false)
         fun getInstance(project: Project?): ArgumentTree? {
             if (project == null || project.isDisposed) {
                 return null
             }
-            val component = ToolWindowManager.getInstance(project).getToolWindow(TOOLWINDOW_ID)
+            val component = ToolWindowManager.getInstance(project).getToolWindow(ArgumentTreeView.COMMANDLINEARGS_TOOLWINDOW_ID)
                 ?.contentManagerIfCreated
                 ?.selectedContent
                 ?.component
-            return if (component != null && component is ArgumentTreeView) component.tree else null
+            return if (component is ArgumentTreeView) component.tree else null
         }
     }
 
-    private val argsService = ArgumentsService.getInstance(project)
-    private var lockedCounter: Int = 0
-    private var hasChanges = false
+    private var hasPendingChanges: Boolean = false
+    private val argumentsService: ArgumentsService get() = ArgumentsService.getInstance(project)
     private val myModel: ArgumentTreeModel get() = model as ArgumentTreeModel
-    private val isLocked
-        get() = lockedCounter > 0
-    private val rootNode
-        get() = argsService.rootNode
 
     init {
-        isRootVisible = true
         showsRootHandles = false
-        model = ArgumentTreeModel()
-        myModel.addTreeModelListener(this)
-        addTreeExpansionListener(this)
+        model = ArgumentTreeModel(argumentsService.rootNode)
+        cellEditor = ArgumentTreeCellEditor(this)
+        isEditable = true
+
+        addTreeExpansionListener(object : TreeExpansionListener {
+            override fun treeExpanded(event: TreeExpansionEvent?) {
+                val node = event?.path?.lastPathComponent
+                if (node is ArgumentTreeNode) {
+                    node.isExpanded = true
+                    hasPendingChanges = true
+                }
+            }
+
+            override fun treeCollapsed(event: TreeExpansionEvent?) {
+                val node = event?.path?.lastPathComponent
+                if (node is ArgumentTreeNode) {
+                    node.isExpanded = false
+                    hasPendingChanges = true
+                }
+            }
+        })
+
+        addMouseListener(object : MouseAdapter() {
+            override fun mouseReleased(e: MouseEvent?) {
+                if (e?.button == MouseEvent.BUTTON3) {
+                    val node = selectedNode()
+                    if (node is ArgumentTreeNode && !node.readonly) {
+                        editNode(node)
+                    }
+                }
+            }
+        })
+
+        model.addTreeModelListener(object : TreeModelListener {
+            override fun treeNodesChanged(e: TreeModelEvent?) {
+                hasPendingChanges = true
+            }
+
+            override fun treeNodesInserted(e: TreeModelEvent?) {
+                hasPendingChanges = true
+            }
+
+            override fun treeNodesRemoved(e: TreeModelEvent?) {
+                hasPendingChanges = true
+            }
+
+            override fun treeStructureChanged(e: TreeModelEvent?) {
+                hasPendingChanges = true
+            }
+        })
+        
+        addFocusListener(object : FocusListener {
+            override fun focusGained(e: FocusEvent?) {}
+            override fun focusLost(e: FocusEvent?) {
+                if (hasPendingChanges) {
+                    argumentsService.saveState()
+                    hasPendingChanges = false
+                }
+            }
+        })
     }
 
-    fun postInit() {
+    internal fun postInit() {
         transferHandler = object : TransferHandler() {
             override fun createTransferable(component: JComponent): Transferable? {
-                val tree = component as? JTree ?: return null
-                val selection = tree.selectionPaths ?: return null
-                if (selection.size <= 1) return null
+                val tree = component as? JTree
+                val selection = tree?.selectionPaths
+                if (selection?.isEmpty() != false) return null
                 return object : TransferableList<TreePath>(*selection) {
                     override fun toString(path: TreePath): String {
                         return path.lastPathComponent.toString()
@@ -73,33 +119,30 @@ class ArgumentTree(project: Project) :
         postLoad()
     }
 
-    fun postLoad() {
+    internal fun postLoad() {
         myModel.reload()
-        restoreExpandState(argsService.rootNode)
+        restoreExpandState(argumentsService.rootNode)
+        hasPendingChanges = false
     }
 
     fun addNode(node: ArgumentTreeNode, parent: ArgumentTreeNode? = null) {
-        val shouldReload = rootNode.childCount == 0
         val (folder, index) = getInsertPosition(parent)
         myModel.insertNodeInto(node, folder, index)
-        if (shouldReload) {
-            myModel.reload()
-        }
     }
 
-    fun insertNode(node: ArgumentTreeNode, parent: ArgumentTreeNode, index: Int = Int.MAX_VALUE) {
-        myModel.insertNodeInto(node, parent, min(index, parent.childCount))
+    fun addNode(node: NotSupportedNode) {
+        myModel.insertNodeInto(node, argumentsService.rootNode, 0)
     }
 
     fun editNode(node: ArgumentTreeNode) {
-        if (ArgumentPropertiesDialog(node).showAndGet()) {
+        if (ArgumentPropertiesDialog(project, node).showAndGet()) {
             if (node.isFolder) {
                 var firstCheckedFound = false
                 if (node.singleChoice) {
-                    for (child in node.childrenArgs()) {
-                        if (child.isChecked) {
+                    node.forEachArg {
+                        if (it.isChecked) {
                             if (firstCheckedFound) {
-                                setNodeState(child, false)
+                                setNodeState(it, false)
                             } else {
                                 firstCheckedFound = true
                             }
@@ -108,11 +151,11 @@ class ArgumentTree(project: Project) :
                 }
             } else {
                 if (node.childCount > 0) {
-                    val folder = node.parent!!
-                    var index = folder.getIndex(node) + 1
-                    for (child in node.childrenArgs()) {
-                        removeNode(child)
-                        insertNode(child, folder, index)
+                    val parent = node.parent as ArgumentTreeNode
+                    var index = parent.getIndex(node) + 1
+                    node.forEachArg {
+                        removeNode(it)
+                        insertNode(it, parent, index)
                         index++
                     }
                 }
@@ -121,150 +164,103 @@ class ArgumentTree(project: Project) :
         }
     }
 
-    fun expandNode(node: ArgumentTreeNode, recursive: Boolean) {
+    fun expandNode(node: ArgumentTreeNode) {
         expandPath(TreePath(node.path))
-        if (recursive) {
-            for (child in node.childrenArgs()) {
-                expandNode(child, false)
-            }
-        }
     }
 
-    fun removeNode(node: ArgumentTreeNode) {
+    fun insertNode(node: ArgumentTreeNode, parent: ArgumentTreeNode, index: Int = Int.MAX_VALUE) {
+        myModel.insertNodeInto(node, parent, min(index, parent.childCount))
+    }
+
+    override fun isPathEditable(path: TreePath?): Boolean {
+        val node = path?.lastPathComponent
+        return node is ArgumentTreeNode && !node.readonly
+    }
+
+    fun removeNode(node: MutableTreeNode) {
         myModel.removeNodeFromParent(node)
     }
 
-    fun removeNodes(nodes: Array<ArgumentTreeNode>) {
-        lock()
-        var i = nodes.size - 1
-        while (i >= 0) {
-            removeNode(nodes[i])
-            i--
-        }
-        unlock()
-    }
-
-    fun selectedNodes(sorted: Boolean = false): Array<ArgumentTreeNode> {
-        if (sorted) {
-            if (selectionRows?.isNotEmpty() == true) {
-                val sortedSelectionRows = selectionRows!!.sorted()
-                val selectedNodes = ArrayList<ArgumentTreeNode>(sortedSelectionRows.count())
-                for (row in sortedSelectionRows) {
-                    selectedNodes.add(getPathForRow(row).lastPathComponent as ArgumentTreeNode)
-                }
-                return selectedNodes.toArray(arrayOf())
-            }
-            return arrayOf()
-        }
-        return getSelectedNodes(ArgumentTreeNode::class.java, null)
+    fun removeNodes(nodes: List<MutableTreeNode>) {
+        nodes.forEach { removeNode(it) }
     }
 
     fun selectedNode(): ArgumentTreeNode? {
         return getSelectedNodes(ArgumentTreeNode::class.java, null).firstOrNull()
     }
 
+    fun selectedNodes(sorted: Boolean = false): List<ArgumentTreeNode> {
+        if (sorted) {
+            val selectionRows = selectionRows
+            if (selectionRows?.isNotEmpty() == true) {
+                val sortedRows = selectionRows.sorted()
+                val nodes = ArrayList<ArgumentTreeNode>(sortedRows.count())
+                for (row in sortedRows) {
+                    val node = getPathForRow(row).lastPathComponent
+                    if (node is ArgumentTreeNode) {
+                        nodes.add(node)
+                    }
+                }
+                return nodes.toList()
+            }
+            return emptyList()
+        }
+        return getSelectedNodes(ArgumentTreeNode::class.java, null).toList()
+    }
+
     fun getInsertPosition(node: ArgumentTreeNode?, isAbove: Boolean = false): InsertPosition {
+        if (node == argumentsService.sharedRoot) {
+            return InsertPosition(argumentsService.sharedRoot, argumentsService.sharedRoot.childCount)
+        }
         if (node != null) {
             if (node.isFolder) {
                 return InsertPosition(node, node.childCount)
             }
             val parent = node.parent
-            if (parent != null) {
-                if (isAbove) {
-                    return InsertPosition(parent, parent.getIndex(node))
+            if (parent is ArgumentTreeNode) {
+                var index = parent.getIndex(node)
+                if (!isAbove) {
+                    ++index
                 }
-                return InsertPosition(parent, parent.getIndex(node) + 1)
+                return InsertPosition(parent, index)
             }
         }
-        return InsertPosition(rootNode, rootNode.childCount)
+        return InsertPosition(argumentsService.localRoot, argumentsService.localRoot.childCount)
     }
 
-    private fun restoreExpandState(node: ArgumentTreeNode) {
+    fun restoreExpandState(node: ArgumentTreeNode) {
         if (node.isExpanded) {
-            expandNode(node, false)
+            expandNode(node)
         }
-        for (child in node.childrenArgs()) {
-            restoreExpandState(child)
-        }
-    }
-
-    fun lock() {
-        lockedCounter++
-    }
-
-    fun unlock() {
-        if (lockedCounter > 0) {
-            lockedCounter--
-            if (lockedCounter == 0 && hasChanges) {
-                treeChanged()
-                hasChanges = false
-            }
-        }
-    }
-
-    private fun treeChanged() {
-        if (!isLocked) {
-            argsService.saveState()
-            argsService.rebuildArgs()
-        } else {
-            hasChanges = true
-        }
-    }
-
-    override fun onDoubleClick(node: CheckedTreeNode?) {
-        if (node != null) {
-            editNode(node as ArgumentTreeNode)
-        }
-    }
-
-    override fun treeNodesChanged(e: TreeModelEvent?) {
-        treeChanged()
-    }
-
-    override fun treeNodesInserted(e: TreeModelEvent?) {
-        treeChanged()
-    }
-
-    override fun treeNodesRemoved(e: TreeModelEvent?) {
-        treeChanged()
-    }
-
-    override fun treeStructureChanged(e: TreeModelEvent?) {
-        treeChanged()
-    }
-
-    override fun treeExpanded(event: TreeExpansionEvent?) {
-        ((event ?: return).path.lastPathComponent as ArgumentTreeNode).isExpanded = true
-        treeChanged()
-    }
-
-    override fun treeCollapsed(event: TreeExpansionEvent?) {
-        ((event ?: return).path.lastPathComponent as ArgumentTreeNode).isExpanded = false
-        treeChanged()
+        node.forEachArg { restoreExpandState(it) }
     }
 
     data class InsertPosition(val parent: ArgumentTreeNode, val index: Int)
 
-    inner class ArgumentTreeModel : DefaultTreeModel(rootNode), EditableModel,
-        RowsDnDSupport.RefinedDropSupport {
+    inner class ArgumentTreeModel(rootNode: ArgumentTreeRootNode) : DefaultTreeModel(rootNode), EditableModel, RowsDnDSupport.RefinedDropSupport {
         override fun addRow() {}
         override fun removeRow(index: Int) {}
         override fun exchangeRows(oldIndex: Int, newIndex: Int) {}
         override fun canExchangeRows(oldIndex: Int, newIndex: Int) = false
 
-        override fun canDrop(
-            oldIndex: Int,
-            newIndex: Int,
-            position: RowsDnDSupport.RefinedDropSupport.Position
-        ): Boolean {
+        override fun canDrop(oldIndex: Int,newIndex: Int,position: RowsDnDSupport.RefinedDropSupport.Position): Boolean {
             if (oldIndex < 0 || newIndex < 0 || rowCount <= oldIndex || rowCount <= newIndex) {
                 return false
             }
             val oldPaths = selectionPaths ?: return false
-            val newNode = getPathForRow(newIndex).lastPathComponent as ArgumentTreeNode
+            val newNode = getPathForRow(newIndex).lastPathComponent
+            if (newNode !is ArgumentTreeNode) {
+                return false
+            }
             val newParent = newNode.parent
+            if (newParent == root && position != RowsDnDSupport.RefinedDropSupport.Position.INTO) {
+                return false
+            }
             for (oldPath in oldPaths) {
-                val oldNode = oldPath.lastPathComponent as ArgumentTreeNode
+                val oldNode = oldPath.lastPathComponent
+                if (oldNode !is ArgumentTreeNode) {
+                    return false
+                }
                 if (oldNode === newNode) {
                     return false
                 }
@@ -282,19 +278,17 @@ class ArgumentTree(project: Project) :
         }
 
         override fun isDropInto(component: JComponent, oldIndex: Int, newIndex: Int): Boolean {
-            return ((getPathForRow(newIndex) ?: return false).lastPathComponent as ArgumentTreeNode).isFolder
+            val node = getPathForRow(newIndex)?.lastPathComponent
+            return node is ArgumentTreeNode && node.isFolder
         }
 
         override fun drop(oldIndex: Int, newIndex: Int, position: RowsDnDSupport.RefinedDropSupport.Position) {
-            lock()
             val dstNode = getPathForRow(newIndex).lastPathComponent as ArgumentTreeNode
-            var (folder, index) = getInsertPosition(
-                dstNode,
-                position == RowsDnDSupport.RefinedDropSupport.Position.ABOVE
-            )
+            val isAbove = position == RowsDnDSupport.RefinedDropSupport.Position.ABOVE
+            var (folder, index) = getInsertPosition(dstNode, isAbove)
             val folderPath = folder.path
-            val selectedNodes = selectedNodes(true).filter { n -> !folderPath.contains(n) }.toTypedArray()
-            val moveNodes = selectedNodes.filter { n -> !n.checkIsAncestorIn(selectedNodes) }
+            val selectedNodes = selectedNodes(true).filter { !folderPath.contains(it) }
+            val moveNodes = selectedNodes.filter { !it.checkIsAncestorIn(selectedNodes) && !it.readonly }
             val newSelectionPaths = ArrayList<TreePath>(moveNodes.count())
             for (node in moveNodes) {
                 val wasExpanded = isExpanded(TreePath(node.path))
@@ -314,7 +308,6 @@ class ArgumentTree(project: Project) :
             }
             expandPath(TreePath(folder.path))
             selectionPaths = newSelectionPaths.toArray(arrayOf())
-            unlock()
         }
     }
 }
