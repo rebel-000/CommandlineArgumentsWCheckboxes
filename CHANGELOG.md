@@ -4,6 +4,8 @@
 
 ## Unreleased
 
+## 2.0.0 - 2024-04-07
+
 ### Added
 - Shared arguments group
 - Inline arguments editor
