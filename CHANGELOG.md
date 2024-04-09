@@ -4,6 +4,8 @@
 
 ## Unreleased
 
+## 2.0.1 - 2024-04-09
+
 ### Fixed
 - Default enabled state
 
