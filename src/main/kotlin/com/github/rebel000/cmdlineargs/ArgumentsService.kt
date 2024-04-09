@@ -37,7 +37,7 @@ class ArgumentsService(private val project: Project) : Disposable {
     val sharedRoot = ArgumentTreeRootNode(Resources.message("toolwindow.sharedArgumentsNode"))
     val localRoot = ArgumentTreeRootNode(Resources.message("toolwindow.rootNode"))
     val rootNode = ArgumentTreeRootNode(Resources.message("toolwindow.rootNode")).apply { add(localRoot) }
-    var isEnabled: Boolean = false
+    var isEnabled: Boolean = true
     val tree: ArgumentTree?
         get() = ArgumentTree.getInstance(project)
 
@@ -106,7 +106,7 @@ class ArgumentsService(private val project: Project) : Disposable {
             val version = jObject.get("version")
             if (version != null && version.asInt == 1) {
                 showShared = jObject.get("showShared")?.asBoolean == true
-                isEnabled = jObject.get("isEnabled")?.asBoolean == true
+                isEnabled = jObject.get("isEnabled")?.asBoolean ?: true
                 localRoot.fromJson(jObject)
             }
         }
