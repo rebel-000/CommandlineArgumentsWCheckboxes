@@ -4,6 +4,8 @@
 
 ## Unreleased
 
+## 2.0.2 - 2024-04-11
+
 ### Fixed
 - Shared arguments sync
 
