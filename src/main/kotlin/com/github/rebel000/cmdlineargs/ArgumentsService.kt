@@ -73,7 +73,9 @@ class ArgumentsService(private val project: Project) : Disposable {
         }
     }
 
-    override fun dispose() {}
+    override fun dispose() {
+        saveState()
+    }
 
     fun buildArgs(): String {
         val arguments = Vector<String>()
