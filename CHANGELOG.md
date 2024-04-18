@@ -4,6 +4,8 @@
 
 ## Unreleased
 
+## 2.0.3 - 2024-04-18
+
 ### Fixed
 - Bypass C++ config args
 
