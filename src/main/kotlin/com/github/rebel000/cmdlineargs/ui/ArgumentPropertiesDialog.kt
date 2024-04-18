@@ -42,29 +42,29 @@ class ArgumentPropertiesDialog(private val project: Project, private val node: A
         isSingleChoiceField.isEnabled = isFolderField.isSelected
         platformFiltersField.text = node.filters.platform
         platformFiltersField.setEmptyState(Resources.message("properties.platformFilters.desc"))
-        platformFiltersField.accessibleContext.addPropertyChangeListener() {
+        platformFiltersField.accessibleContext.addPropertyChangeListener {
             if (it?.propertyName == AccessibleContext.ACCESSIBLE_STATE_PROPERTY
                     && it.oldValue == AccessibleState.FOCUSED
                     && it.newValue == null) {
-                onFiltersFieldChanged(platformFiltersField, platformCheckboxes);
+                onFiltersFieldChanged(platformFiltersField, platformCheckboxes)
             }
         }
         configurationFiltersField.text = node.filters.configuration
         configurationFiltersField.setEmptyState(Resources.message("properties.configurationFilters.desc"))
-        configurationFiltersField.accessibleContext.addPropertyChangeListener() {
+        configurationFiltersField.accessibleContext.addPropertyChangeListener {
             if (it?.propertyName == AccessibleContext.ACCESSIBLE_STATE_PROPERTY
                     && it.oldValue == AccessibleState.FOCUSED
                     && it.newValue == null) {
-                onFiltersFieldChanged(configurationFiltersField, configCheckboxes);
+                onFiltersFieldChanged(configurationFiltersField, configCheckboxes)
             }
         }
         runConfigurationFiltersField.text = node.filters.runConfiguration
         runConfigurationFiltersField.setEmptyState(Resources.message("properties.runConfigurationFilters.desc"))
-        runConfigurationFiltersField.accessibleContext.addPropertyChangeListener() {
+        runConfigurationFiltersField.accessibleContext.addPropertyChangeListener {
             if (it?.propertyName == AccessibleContext.ACCESSIBLE_STATE_PROPERTY 
                     && it.oldValue == AccessibleState.FOCUSED 
                     && it.newValue == null) {
-                onFiltersFieldChanged(runConfigurationFiltersField, runConfigCheckboxes);
+                onFiltersFieldChanged(runConfigurationFiltersField, runConfigCheckboxes)
             }
         }
 

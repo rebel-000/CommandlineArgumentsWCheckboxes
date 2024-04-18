@@ -12,7 +12,7 @@ class CppConfigurationParametersExtension(project: Project) : CppConfigurationPa
 
     override fun process(parameters: ExeConfigurationParameters) {
         if (argsService.isEnabled) {
-            parameters.programParameters = argsService.buildArgs()
+            parameters.programParameters += " " + argsService.buildArgs()
         }
     }
 
