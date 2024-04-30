@@ -161,6 +161,9 @@ class ArgumentsService(private val project: Project) : Disposable {
                 if (launchParameters is LocalCppProjectLaunchParameters) {
                     return true
                 }
+                else if (launchParameters is RdJsonLaunchParameters) {
+                    return true
+                }
             }
         }
         else if (cfg is UwpConfiguration
