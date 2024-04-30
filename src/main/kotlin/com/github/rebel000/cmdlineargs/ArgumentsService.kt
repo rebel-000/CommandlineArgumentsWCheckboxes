@@ -13,6 +13,7 @@ import com.intellij.openapi.components.service
 import com.intellij.openapi.project.Project
 import com.jetbrains.rider.cpp.run.configurations.CppProjectConfiguration
 import com.jetbrains.rider.cpp.run.configurations.launch.LocalCppProjectLaunchParameters
+import com.jetbrains.rider.cpp.run.configurations.rdjson.RdJsonLaunchParameters
 import com.jetbrains.rider.projectView.solution
 import com.jetbrains.rider.projectView.solutionDirectory
 import com.jetbrains.rider.projectView.solutionName
