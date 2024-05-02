@@ -63,10 +63,13 @@ class ArgumentTree(private val project: Project) : CheckboxTree(ArgumentTreeCell
 
         addMouseListener(object : MouseAdapter() {
             override fun mouseReleased(e: MouseEvent?) {
-                if (e?.button == MouseEvent.BUTTON3) {
+                if (!isEditing && e?.button == MouseEvent.BUTTON3) {
                     val node = selectedNode()
                     if (node is ArgumentTreeNode && !node.readonly) {
-                        editNode(node)
+                        val bounds = getPathBounds(TreePath(node.path)) ?: return
+                        if (e.y >= bounds.y && e.y <= bounds.y + bounds.height) {
+                            editNode(node)
+                        }
                     }
                 }
             }
