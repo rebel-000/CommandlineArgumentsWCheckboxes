@@ -4,6 +4,10 @@
 
 ## Unreleased
 
+### Fixed
+- Fix for unreal projects support (PR#18)
+- Minor fix for arguments rename/edit
+
 ## 2.0.3 - 2024-04-18
 
 ### Fixed
