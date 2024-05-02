@@ -13,6 +13,7 @@ import com.intellij.openapi.components.service
 import com.intellij.openapi.project.Project
 import com.jetbrains.rider.cpp.run.configurations.CppProjectConfiguration
 import com.jetbrains.rider.cpp.run.configurations.launch.LocalCppProjectLaunchParameters
+import com.jetbrains.rider.cpp.run.configurations.rdjson.RdJsonLaunchParameters
 import com.jetbrains.rider.projectView.solution
 import com.jetbrains.rider.projectView.solutionDirectory
 import com.jetbrains.rider.projectView.solutionName
@@ -159,6 +160,9 @@ class ArgumentsService(private val project: Project) : Disposable {
                 val activeParameters = cfg.parameters.parametersMap.getParametersForConfigurationAndPlatform(config, platform, cfg.parameters.defaultProjectFilePath)
                 val launchParameters = activeParameters.getCurrentLaunchParameters()
                 if (launchParameters is LocalCppProjectLaunchParameters) {
+                    return true
+                }
+                else if (launchParameters is RdJsonLaunchParameters) {
                     return true
                 }
             }
