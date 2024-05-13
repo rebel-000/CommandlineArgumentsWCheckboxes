@@ -181,7 +181,9 @@ class ArgumentTree(private val project: Project) : CheckboxTree(ArgumentTreeCell
     }
 
     fun removeNode(node: MutableTreeNode) {
-        myModel.removeNodeFromParent(node)
+        if (node is ArgumentTreeNode && !node.readonly) {
+            myModel.removeNodeFromParent(node)
+        }
     }
 
     fun removeNodes(nodes: List<MutableTreeNode>) {

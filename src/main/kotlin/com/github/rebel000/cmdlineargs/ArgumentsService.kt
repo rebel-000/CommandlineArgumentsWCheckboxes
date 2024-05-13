@@ -125,7 +125,8 @@ class ArgumentsService(private val project: Project) : Disposable {
                     ?: rootNode.insert(notSupportedNode, 0)
             }
             else {
-                tree?.removeNode(notSupportedNode)
+                val model = tree?.model as? ArgumentTree.ArgumentTreeModel
+                model?.removeNodeFromParent(notSupportedNode)
                     ?: notSupportedNode.removeFromParent()
             }
             isNotSupportedVisible = enabled
@@ -145,7 +146,8 @@ class ArgumentsService(private val project: Project) : Disposable {
                     ?: rootNode.insert(sharedRoot, rootNode.getIndex(localRoot))
                 tree?.restoreExpandState(sharedRoot)
             } else {
-                tree?.removeNode(sharedRoot)
+                val model = tree?.model as? ArgumentTree.ArgumentTreeModel
+                model?.removeNodeFromParent(sharedRoot)
                     ?: sharedRoot.removeFromParent()
             }
             isSharedVisible = enabled
