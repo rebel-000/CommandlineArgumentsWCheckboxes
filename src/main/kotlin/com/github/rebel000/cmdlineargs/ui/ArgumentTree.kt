@@ -33,7 +33,7 @@ class ArgumentTree(private val project: Project) : CheckboxTree(ArgumentTreeCell
         }
     }
 
-    private var hasPendingChanges: Boolean = false
+    private var isLoading: Boolean = false
     private val argumentsService: ArgumentsService get() = ArgumentsService.getInstance(project)
     private val myModel: ArgumentTreeModel get() = model as ArgumentTreeModel
 
@@ -48,7 +48,9 @@ class ArgumentTree(private val project: Project) : CheckboxTree(ArgumentTreeCell
                 val node = event?.path?.lastPathComponent
                 if (node is ArgumentTreeNode) {
                     node.isExpanded = true
-                    hasPendingChanges = true
+                    if (!isLoading) {
+                        argumentsService.scheduleSaveState()
+                    }
                 }
             }
 
@@ -56,7 +58,9 @@ class ArgumentTree(private val project: Project) : CheckboxTree(ArgumentTreeCell
                 val node = event?.path?.lastPathComponent
                 if (node is ArgumentTreeNode) {
                     node.isExpanded = false
-                    hasPendingChanges = true
+                    if (!isLoading) {
+                        argumentsService.scheduleSaveState()
+                    }
                 }
             }
         })
@@ -77,28 +81,26 @@ class ArgumentTree(private val project: Project) : CheckboxTree(ArgumentTreeCell
 
         model.addTreeModelListener(object : TreeModelListener {
             override fun treeNodesChanged(e: TreeModelEvent?) {
-                hasPendingChanges = true
+                if (!isLoading) {
+                    argumentsService.scheduleSaveState()
+                }
             }
 
             override fun treeNodesInserted(e: TreeModelEvent?) {
-                hasPendingChanges = true
+                if (!isLoading) {
+                    argumentsService.scheduleSaveState()
+                }
             }
 
             override fun treeNodesRemoved(e: TreeModelEvent?) {
-                hasPendingChanges = true
+                if (!isLoading) {
+                    argumentsService.scheduleSaveState()
+                }
             }
 
             override fun treeStructureChanged(e: TreeModelEvent?) {
-                hasPendingChanges = true
-            }
-        })
-        
-        addFocusListener(object : FocusListener {
-            override fun focusGained(e: FocusEvent?) {}
-            override fun focusLost(e: FocusEvent?) {
-                if (hasPendingChanges) {
-                    argumentsService.saveState()
-                    hasPendingChanges = false
+                if (!isLoading) {
+                    argumentsService.scheduleSaveState()
                 }
             }
         })
@@ -123,9 +125,10 @@ class ArgumentTree(private val project: Project) : CheckboxTree(ArgumentTreeCell
     }
 
     internal fun postLoad() {
+        isLoading = true
         myModel.reload()
         restoreExpandState(argumentsService.rootNode)
-        hasPendingChanges = false
+        isLoading = false
     }
 
     fun addNode(node: ArgumentTreeNode, parent: ArgumentTreeNode? = null) {

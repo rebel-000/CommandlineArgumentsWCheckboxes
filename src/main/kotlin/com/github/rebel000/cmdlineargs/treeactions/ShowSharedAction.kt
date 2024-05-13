@@ -20,7 +20,7 @@ class ShowSharedAction : ToggleAction() {
                 argsService.showSharedArgs = true
             }
         }
-        argsService.saveState()
+        argsService.scheduleSaveState()
     }
 
     override fun update(e: AnActionEvent) {

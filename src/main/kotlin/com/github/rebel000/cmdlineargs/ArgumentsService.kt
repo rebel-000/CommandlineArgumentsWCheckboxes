@@ -26,6 +26,10 @@ import com.jetbrains.rider.run.configurations.project.DotNetProjectConfiguration
 import com.jetbrains.rider.run.configurations.uwp.UwpConfiguration
 import java.io.File
 import java.util.*
+import java.util.concurrent.Executors
+import java.util.concurrent.ScheduledExecutorService
+import java.util.concurrent.ScheduledFuture
+import java.util.concurrent.TimeUnit
 
 
 @Service(Service.Level.PROJECT)
@@ -35,6 +39,9 @@ class ArgumentsService(private val project: Project) : Disposable {
     private val notSupportedNode = NotSupportedNode()
     private var isNotSupportedVisible: Boolean = false
     private var isSharedVisible: Boolean = false
+    private val saveDelayMs: Long = 500
+    private val executorService: ScheduledExecutorService = Executors.newSingleThreadScheduledExecutor()
+    private var scheduledSaveTask: ScheduledFuture<*>? = null
     val sharedRoot = ArgumentTreeRootNode(Resources.message("toolwindow.sharedArgumentsNode"))
     val localRoot = ArgumentTreeRootNode(Resources.message("toolwindow.rootNode"))
     val rootNode = ArgumentTreeRootNode(Resources.message("toolwindow.rootNode")).apply { add(localRoot) }
@@ -75,7 +82,10 @@ class ArgumentsService(private val project: Project) : Disposable {
     }
 
     override fun dispose() {
-        saveState()
+        scheduledSaveTask?.cancel(false)
+        scheduledSaveTask = null
+        executorService.shutdown()
+        performSaveState()
     }
 
     fun buildArgs(): String {
@@ -86,7 +96,14 @@ class ArgumentsService(private val project: Project) : Disposable {
         return arguments.joinToString(" ")
     }
 
-    fun saveState() {
+    @Synchronized
+    fun scheduleSaveState() {
+        scheduledSaveTask?.cancel(false)
+        scheduledSaveTask = executorService.schedule({ this.performSaveState() }, saveDelayMs, TimeUnit.MILLISECONDS)
+    }
+
+    @Synchronized
+    private fun performSaveState() {
         val jObject = localRoot.toJson()
         jObject.addProperty("version", 1)
         jObject.addProperty("showShared", isSharedVisible)
@@ -97,6 +114,7 @@ class ArgumentsService(private val project: Project) : Disposable {
             sharedJObject.addProperty("version", 1)
             sharedArgsStorage.state.sharedArgs = sharedJObject.toString()
         }
+        scheduledSaveTask = null
     }
 
     fun reloadState() {

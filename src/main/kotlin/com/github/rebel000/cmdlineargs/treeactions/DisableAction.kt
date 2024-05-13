@@ -13,7 +13,7 @@ class DisableAction : ToggleAction() {
     override fun setSelected(e: AnActionEvent, state: Boolean) {
         val argsService = ArgumentsService.getInstance(e.project ?: return)
         argsService.isEnabled = !state
-        argsService.saveState()
+        argsService.scheduleSaveState()
     }
 
     override fun update(e: AnActionEvent) {

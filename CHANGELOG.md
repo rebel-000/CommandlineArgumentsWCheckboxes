@@ -4,6 +4,9 @@
 
 ## Unreleased
 
+### Fixed
+- Fixed arguments save/reload (issue#20)
+
 ## 2.0.4 - 2024-05-02
 
 ### Fixed

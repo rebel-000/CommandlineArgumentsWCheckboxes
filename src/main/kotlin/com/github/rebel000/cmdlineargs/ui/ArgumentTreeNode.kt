@@ -13,7 +13,7 @@ open class ArgumentTreeNode(var name: String, var isFolder: Boolean, val readonl
     var filters: Filters = Filters()
     var isExpanded: Boolean = true
 
-    val state: ThreeStateCheckBox.State
+    open val state: ThreeStateCheckBox.State
         get() = privateState
 
     fun checkIsAncestorIn(nodes: List<ArgumentTreeNode>): Boolean {
@@ -125,7 +125,7 @@ open class ArgumentTreeNode(var name: String, var isFolder: Boolean, val readonl
         }
     }
 
-    private fun update() {
+    protected open fun update() {
         var newState: ThreeStateCheckBox.State = ThreeStateCheckBox.State.NOT_SELECTED
         if (singleChoice) {
             for (child in children) {
