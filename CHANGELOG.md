@@ -4,6 +4,16 @@
 
 ## Unreleased
 
+### Added
+
+- Patch parameters for configurations started as part of "Compound" or "Multi-Launch"
+- Patch parameters for configurations started with "Before Launch" task
+
+### Fixed
+
+- Argument properties dialog size
+- Argument properties dialog filters checkboxes
+
 ## 2.0.6 - 2024-08-19
 
 ### Changed

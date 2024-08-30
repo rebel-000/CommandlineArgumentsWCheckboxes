@@ -12,7 +12,8 @@ class CppConfigurationParametersExtension(project: Project) : CppConfigurationPa
 
     override fun process(parameters: ExeConfigurationParameters) {
         if (argsService.isEnabled) {
-            parameters.programParameters += " " + argsService.buildArgs()
+            parameters.programParameters += " " + argsService.buildArgs(parameters.envs[ArgumentsService.CPP_RUN_CONFIGURATION_NAME_ENV_VARIABLE])
+            parameters.envs -= ArgumentsService.CPP_RUN_CONFIGURATION_NAME_ENV_VARIABLE
         }
     }
 

@@ -32,7 +32,6 @@ class ArgumentPropertiesDialog(private val project: Project, private val node: A
 
     init {
         title = Resources.message("properties.title")
-        isResizable = false
         isFolderField.isSelected = node.isFolder
         isFolderField.addItemListener {
             val isSelected = isFolderField.isSelected
@@ -97,7 +96,7 @@ class ArgumentPropertiesDialog(private val project: Project, private val node: A
                     field.text = cfgName
                 }
                 else {
-                    field.text = field.text.trim(';') + "; $cfgName"
+                    field.text = field.text.trim(';') + ";$cfgName"
                 }
             }
             lockFilters = false
@@ -129,8 +128,6 @@ class ArgumentPropertiesDialog(private val project: Project, private val node: A
     }
 
     override fun createCenterPanel(): JComponent? {
-        setSize(620, 500)
-
         val builder = FormBuilder
             .createFormBuilder()
             .addLabeledComponent(Resources.message("properties.name"), nameField)
