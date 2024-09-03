@@ -4,6 +4,8 @@
 
 ## Unreleased
 
+## 2.0.7 - 2024-08-30
+
 ### Added
 
 - Patch parameters for configurations started as part of "Compound" or "Multi-Launch"
