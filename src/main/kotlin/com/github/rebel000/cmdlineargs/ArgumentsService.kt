@@ -12,9 +12,12 @@ import com.intellij.execution.multilaunch.execution.executables.impl.RunConfigur
 import com.intellij.execution.process.ProcessHandler
 import com.intellij.execution.runners.ExecutionEnvironment
 import com.intellij.openapi.Disposable
+import com.intellij.openapi.actionSystem.AnAction
+import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.components.Service
 import com.intellij.openapi.components.service
+import com.intellij.openapi.ide.CopyPasteManager
 import com.intellij.openapi.project.Project
 import com.jetbrains.rider.cpp.run.configurations.CppProjectConfiguration
 import com.jetbrains.rider.cpp.run.configurations.launch.LocalCppProjectLaunchParameters
@@ -29,6 +32,7 @@ import com.jetbrains.rider.run.configurations.method.DotNetStaticMethodConfigura
 import com.jetbrains.rider.run.configurations.multiPlatform.RiderMultiPlatformConfiguration
 import com.jetbrains.rider.run.configurations.project.DotNetProjectConfiguration
 import com.jetbrains.rider.run.configurations.uwp.UwpConfiguration
+import java.awt.datatransfer.StringSelection
 import java.io.File
 import java.util.*
 import java.util.concurrent.Executors
@@ -57,6 +61,8 @@ class ArgumentsService(private val project: Project) : Disposable {
     var showSharedArgs: Boolean
         get() = isSharedVisible
         set(value) = showSharedNode(value)
+
+    var copyCmdArgsActions: Array<AnAction> = emptyArray()
 
     companion object {
         const val CPP_RUN_CONFIGURATION_NAME_ENV_VARIABLE = "com.github.rebel000.cmdlineargs:run_config_name"
@@ -91,11 +97,21 @@ class ArgumentsService(private val project: Project) : Disposable {
 
             override fun runConfigurationAdded(settings: RunnerAndConfigurationSettings) {
                 showNotSupported(!isConfigSupported(settings))
+                rebuildCopyArgsActions()
+            }
+
+            override fun runConfigurationRemoved(settings: RunnerAndConfigurationSettings) {
+                rebuildCopyArgsActions()
+            }
+
+            override fun runConfigurationChanged(settings: RunnerAndConfigurationSettings) {
+                rebuildCopyArgsActions()
             }
         })
 
         ApplicationManager.getApplication().invokeLater {
             showNotSupported(!isConfigSupported(RunManager.getInstance(project).selectedConfiguration))
+            rebuildCopyArgsActions()
         }
     }
 
@@ -190,7 +206,20 @@ class ArgumentsService(private val project: Project) : Disposable {
         }
     }
 
-    private fun isConfigSupported(cfg: RunConfiguration?): Boolean {
+    private fun rebuildCopyArgsActions() {
+        val actions = mutableListOf<AnAction>()
+        val runConfigs = RunManager.getInstance(project).allConfigurationsList.filter { isConfigSupported(it) }.map { it.name }
+        runConfigs.forEach {
+            actions.add(object : AnAction(it) {
+                override fun actionPerformed(e: AnActionEvent) {
+                    CopyPasteManager.getInstance().setContents(StringSelection(buildArgs(it)))
+                }
+            })
+        }
+        copyCmdArgsActions = actions.toTypedArray()
+    }
+
+    fun isConfigSupported(cfg: RunConfiguration?): Boolean {
         return (cfg is CppProjectConfiguration
             || cfg is UwpConfiguration
             || cfg is DotNetExeConfiguration
