@@ -12,6 +12,11 @@ open class ArgumentTreeNode(var name: String, var isFolder: Boolean, val readonl
     var singleChoice: Boolean = false
     var filters: Filters = Filters()
     var isExpanded: Boolean = true
+    var folderAsParameter: Boolean = false
+    var joinChildren: Boolean = false
+    var joinDelimiter: String = ","
+    var joinPrefix: String = ""
+    var joinPostfix: String = ""
 
     open val state: ThreeStateCheckBox.State
         get() = privateState
@@ -36,12 +41,30 @@ open class ArgumentTreeNode(var name: String, var isFolder: Boolean, val readonl
 
     open fun getArgs(out: Vector<String>, filter: ArgumentFilter) {
         if (filter.check(this)) {
-            out.ensureCapacity(out.size + childCount + 1)
             if (isFolder) {
-                forEachArg {
-                    it.getArgs(out, filter)
+                if (joinChildren) {
+                    val value = Vector<String>()
+                    forEachArg {
+                        it.getArgs(value, filter)
+                    }
+                    if (folderAsParameter) {
+                        out.add("${name}${value.joinToString(joinDelimiter, joinPrefix, joinPostfix)}")
+                    }
+                    else {
+                        out.add(value.joinToString(joinDelimiter, joinPrefix, joinPostfix))
+                    }
                 }
-            } else {
+                else {
+                    out.ensureCapacity(out.size + childCount + 1)
+                    if (folderAsParameter) {
+                        out.add(name)
+                    }
+                    forEachArg {
+                        it.getArgs(out, filter)
+                    }
+                }
+            }
+            else {
                 out.add(name)
             }
         }
@@ -52,6 +75,13 @@ open class ArgumentTreeNode(var name: String, var isFolder: Boolean, val readonl
         result.addProperty("name", name)
         result.addProperty("checked", isChecked)
         if (isFolder) {
+            result.addProperty("param", folderAsParameter)
+            if (joinChildren) {
+                result.addProperty("join", true)
+                result.addProperty("join.delimiter", joinDelimiter)
+                result.addProperty("join.prefix", joinPrefix)
+                result.addProperty("join.postfix", joinPostfix)
+            }
             result.addProperty("expanded", isExpanded)
             result.addProperty("singleChoice", singleChoice)
         }
@@ -76,6 +106,11 @@ open class ArgumentTreeNode(var name: String, var isFolder: Boolean, val readonl
         val nameProperty = json.get("name")
         if (nameProperty != null) {
             name = nameProperty.asString
+            folderAsParameter = json.get("param")?.asBoolean == true
+            joinChildren = json.get("join")?.asBoolean == true
+            joinDelimiter = json.get("join.delimiter")?.asString ?: ","
+            joinPrefix = json.get("join.prefix")?.asString ?: ""
+            joinPostfix = json.get("join.postfix")?.asString ?: ""
             setChecked(json.get("checked")?.asBoolean == true)
             isExpanded = json.get("expanded")?.asBoolean == true
             singleChoice = json.get("singleChoice")?.asBoolean == true

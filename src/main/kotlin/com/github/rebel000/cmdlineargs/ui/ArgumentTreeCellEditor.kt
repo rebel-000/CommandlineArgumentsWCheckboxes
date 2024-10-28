@@ -33,10 +33,6 @@ class ArgumentTreeCellEditor(private val tree: ArgumentTree) : DefaultCellEditor
             } else {
                 textField.setBounds(0, 0, width - offset, height)
             }
-//            if (myY != null && myHeight != null) {
-//                textField.size.height = myHeight!!
-//                bounds = Rectangle(bounds).apply { y = myY!!; height = myHeight!! }
-//            }
         }
 
         override fun getPreferredSize(): Dimension {

@@ -19,10 +19,12 @@ class ArgumentTreeCellRenderer : CheckboxTree.CheckboxTreeCellRenderer(true, fal
     companion object {
         fun getIcon(node: ArgumentTreeNode) : Icon? {
             return if (node.isFolder)
-                if (node.singleChoice)
-                    AllIcons.Nodes.Module
+                if (node.folderAsParameter)
+                    if (node.singleChoice) AllIcons.Actions.GroupByModule
+                    else AllIcons.Actions.GroupByModuleGroup
                 else
-                    AllIcons.Nodes.Folder
+                    if (node.singleChoice) AllIcons.Nodes.Module
+                    else AllIcons.Nodes.Folder
             else null
         }
     }
