@@ -4,6 +4,12 @@
 
 ## Unreleased
 
+### Added
+
+- Folder as parameter name
+- Join child arguments into single value (--folder-name="child1,child2,...")
+- Copy commandline arguments action
+
 ## 2.0.7 - 2024-08-30
 
 ### Added
