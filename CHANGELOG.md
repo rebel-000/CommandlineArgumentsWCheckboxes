@@ -4,9 +4,11 @@
 
 ## Unreleased
 
+## 2.1.1 - 2024-10-29
+
 ### Fixed
 
-- Argument preview in properties dialog 
+- Argument preview in properties dialog
 
 ## 2.1.0 - 2024-10-28
 
