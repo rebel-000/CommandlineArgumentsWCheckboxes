@@ -144,7 +144,7 @@ class ArgumentPropertiesDialog(private val project: Project, private val node: A
     private val platformCheckboxes: MutableMap<String, JBCheckBox> = mutableMapOf()
     private val configCheckboxes: MutableMap<String, JBCheckBox> = mutableMapOf()
     private val runConfigCheckboxes: MutableMap<String, JBCheckBox> = mutableMapOf()
-    private val previewArgs = arrayOf("{value1}", "{value2}", "...{valueN}")
+    private val previewNode = ArgumentTreeNode(nameField.text, isFolderField.isSelected, false)
     private var previewFilter: ArgumentFilter? = null
     private var freeze = false
 
@@ -163,6 +163,12 @@ class ArgumentPropertiesDialog(private val project: Project, private val node: A
         if (location != null) {
             setLocation(location)
         }
+
+        previewNode.add(ArgumentTreeNode("{value1}", false, false))
+        previewNode.add(ArgumentTreeNode("{value2}", false, false))
+        previewNode.add(ArgumentTreeNode("{value3}", false, false))
+        previewNode.isChecked = false
+        previewNode.isChecked = true
 
         refresh()
     }
@@ -209,26 +215,12 @@ class ArgumentPropertiesDialog(private val project: Project, private val node: A
             val configurationAndPlatform = project.solution.solutionProperties.activeConfigurationPlatform.value
             previewFilter = ArgumentFilter(configurationAndPlatform?.configuration, configurationAndPlatform?.platform, runConfiguration)
         }
-        if (isFolderField.isSelected) {
-            val args = StringBuilder()
-            if (folderAsParameterField.isSelected) {
-                args.append(nameField.text)
-            }
-            if (isSingleChoiceField.isSelected) {
-                args.append(previewArgs.first())
-            }
-            else {
-                val join = joinChildrenField.isSelected
-                val delim = if (join) joinDelimiterField.text else " "
-                val prefix = if (join) joinPrefixField.text else ""
-                val postfix = if (join) joinPostfixField.text else ""
-                args.append(previewArgs.joinToString(delim, prefix, postfix))
-            }
-            previewField.text = args.toString()
-        }
-        else {
-            previewField.text = nameField.text
-        }
+        val args = Vector<String>()
+        applyTo(previewNode)
+        previewNode.isChecked = false
+        previewNode.isChecked = true
+        previewNode.getArgs(args, previewFilter!!)
+        previewField.text = args.joinToString(" ")
         freeze = false
     }
     
@@ -313,6 +305,15 @@ class ArgumentPropertiesDialog(private val project: Project, private val node: A
     }
 
     override fun doOKAction() {
+        applyTo(node)
+        node.filters.platform = platformFiltersField.text
+        node.filters.configuration = configurationFiltersField.text
+        node.filters.runConfiguration = runConfigurationFiltersField.text
+        saveDimensions()
+        super.doOKAction()
+    }
+
+    private fun applyTo(node: ArgumentTreeNode) {
         node.name = nameField.text
         node.isFolder = isFolderField.isSelected
         node.folderAsParameter = folderAsParameterField.isSelected
@@ -321,11 +322,6 @@ class ArgumentPropertiesDialog(private val project: Project, private val node: A
         node.joinDelimiter = joinDelimiterField.text
         node.joinPrefix = joinPrefixField.text
         node.joinPostfix = joinPostfixField.text
-        node.filters.platform = platformFiltersField.text
-        node.filters.configuration = configurationFiltersField.text
-        node.filters.runConfiguration = runConfigurationFiltersField.text
-        saveDimensions()
-        super.doOKAction()
     }
 
     override fun doCancelAction() {
