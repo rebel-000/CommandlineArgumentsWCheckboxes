@@ -67,10 +67,10 @@
                 <keyboard-shortcut first-keystroke="alt DOWN" keymap="$default" />
             </action>
             <separator />
-            <action id="cmdlineargs.copycmd"
+            <group id="cmdlineargs.copycmd"
                     class="com.github.rebel000.cmdlineargs.treeactions.CopyCmdAction"
                     icon="AllIcons.Actions.ChangeView">
-            </action>
+            </group>
             <separator />
             <action id="cmdlineargs.cut"
                     class="com.github.rebel000.cmdlineargs.treeactions.CutAction"

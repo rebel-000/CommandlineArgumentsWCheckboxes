@@ -19,7 +19,7 @@ import com.intellij.openapi.components.Service
 import com.intellij.openapi.components.service
 import com.intellij.openapi.ide.CopyPasteManager
 import com.intellij.openapi.project.Project
-import com.jetbrains.rider.cpp.run.configurations.CppProjectConfiguration
+import com.jetbrains.rider.cpp.run.configurations.*
 import com.jetbrains.rider.cpp.run.configurations.launch.LocalCppProjectLaunchParameters
 import com.jetbrains.rider.cpp.run.configurations.rdjson.RdJsonLaunchParameters
 import com.jetbrains.rider.projectView.solution
@@ -39,6 +39,8 @@ import java.util.concurrent.Executors
 import java.util.concurrent.ScheduledExecutorService
 import java.util.concurrent.ScheduledFuture
 import java.util.concurrent.TimeUnit
+import kotlin.reflect.full.declaredMemberProperties
+import kotlin.reflect.jvm.isAccessible
 
 
 @Service(Service.Level.PROJECT)
@@ -63,6 +65,7 @@ class ArgumentsService(private val project: Project) : Disposable {
         set(value) = showSharedNode(value)
 
     var copyCmdArgsActions: Array<AnAction> = emptyArray()
+    var lastCppConfigName: String? = null
 
     companion object {
         const val CPP_RUN_CONFIGURATION_NAME_ENV_VARIABLE = "com.github.rebel000.cmdlineargs:run_config_name"
@@ -74,7 +77,7 @@ class ArgumentsService(private val project: Project) : Disposable {
 
         val connection = project.messageBus.connect(this)
         connection.subscribe(ExecutionManager.EXECUTION_TOPIC, object : ExecutionListener {
-            override fun processStartScheduled(executorId: String, env: ExecutionEnvironment) {
+            override fun processStarting(executorId: String, env: ExecutionEnvironment) {
                 patchArguments(env.runnerAndConfigurationSettings)
             }
 
@@ -241,7 +244,7 @@ class ArgumentsService(private val project: Project) : Disposable {
         }
         else if (cfg is MultiLaunchConfiguration) {
             for (d in cfg.descriptors) {
-                val executable = d.executable;
+                val executable = d.executable
                 if (executable is RunConfigurationExecutableManager.RunConfigurationExecutable 
                     && isConfigSupported(executable.settings.configuration)) {
                     return true
@@ -250,6 +253,27 @@ class ArgumentsService(private val project: Project) : Disposable {
         }
         return isConfigSupported(cfg)
     }
+    
+    private fun tryGetActiveParameters(cfg: CppProjectConfiguration): MutableConfigurationParameters? {
+        val (config, platform) = project.solution.solutionProperties.activeConfigurationPlatform.value ?: return null
+        val klass = MutableConfigurationAndPlatformParametersMap::class
+        val property = klass.declaredMemberProperties.find { it.name == "parametersByConfigurationAndPlatform" } ?: return null
+        val isAccessible = property.isAccessible
+        property.isAccessible = true
+        val parameters = property.get(cfg.parameters.parametersMap) as? MutableMap<*, *> ?: return null
+        property.isAccessible = isAccessible
+        for (p in parameters) {
+            val key = p.key
+            if (key is Pair<*, *>
+                && p.value is MutableConfigurationParameters
+                && key.first == config
+                && key.second == platform) {
+                return p.value as MutableConfigurationParameters
+            }
+        }
+
+        return null
+    }
 
     private fun patchArguments(runnerAndConfigurationSettings: RunnerAndConfigurationSettings?): Boolean {
         if (!isEnabled) {
@@ -257,17 +281,26 @@ class ArgumentsService(private val project: Project) : Disposable {
         }
         when (val cfg = runnerAndConfigurationSettings?.configuration) {
             is CppProjectConfiguration -> {
-                val (config, platform) = project.solution.solutionProperties.activeConfigurationPlatform.value ?: return false
-                if (cfg.parameters.parametersMap.hasParametersForConfigurationAndPlatform(config, platform)) {
-                    val activeParameters = cfg.parameters.parametersMap.getParametersForConfigurationAndPlatform(config, platform, cfg.parameters.defaultProjectFilePath)
-                    val launchParameters = activeParameters.getCurrentLaunchParameters()
-                    if (launchParameters is LocalCppProjectLaunchParameters) {
-                        launchParameters.envs[CPP_RUN_CONFIGURATION_NAME_ENV_VARIABLE] = cfg.name
+                if (RunManager.getInstance(project).selectedConfiguration?.configuration is MultiLaunchConfiguration) {
+                    val activeParameters = tryGetActiveParameters(cfg)
+                    if (activeParameters != null) {
+                        val launchParameters = activeParameters.getCurrentLaunchParameters()
+                        if (launchParameters is LocalCppProjectLaunchParameters) {
+                            launchParameters.envs[CPP_RUN_CONFIGURATION_NAME_ENV_VARIABLE] = cfg.name
+                        }
+                        else if (launchParameters is RdJsonLaunchParameters) {
+                            launchParameters.envs[CPP_RUN_CONFIGURATION_NAME_ENV_VARIABLE] = cfg.name
+                        }
                     }
-                    else if (launchParameters is RdJsonLaunchParameters) {
-                        launchParameters.envs[CPP_RUN_CONFIGURATION_NAME_ENV_VARIABLE] = cfg.name
+                    else {
+                        if (lastCppConfigName != null) {
+                            lastCppConfigName = "com.github.rebel000.cmdlineargs:invalid"
+                            return false
+                        }
                     }
                 }
+                lastCppConfigName = cfg.name
+                return true
             }
 
             is UwpConfiguration -> {
@@ -309,23 +342,22 @@ class ArgumentsService(private val project: Project) : Disposable {
                 return false
             }
         }
-
-        return false
     }
 
     private fun cleanupArguments(runnerAndConfigurationSettings: RunnerAndConfigurationSettings?) {
         if (isEnabled) {
             val cfg = runnerAndConfigurationSettings?.configuration
             if (cfg is CppProjectConfiguration) {
-                val (config, platform) = project.solution.solutionProperties.activeConfigurationPlatform.value ?: return
-                if (cfg.parameters.parametersMap.hasParametersForConfigurationAndPlatform(config, platform)) {
-                    val activeParameters = cfg.parameters.parametersMap.getParametersForConfigurationAndPlatform(config, platform, cfg.parameters.defaultProjectFilePath)
-                    val launchParameters = activeParameters.getCurrentLaunchParameters()
-                    if (launchParameters is LocalCppProjectLaunchParameters) {
-                        launchParameters.envs -= CPP_RUN_CONFIGURATION_NAME_ENV_VARIABLE
-                    }
-                    else if (launchParameters is RdJsonLaunchParameters) {
-                        launchParameters.envs -= CPP_RUN_CONFIGURATION_NAME_ENV_VARIABLE
+                lastCppConfigName = null
+                if (RunManager.getInstance(project).selectedConfiguration?.configuration is MultiLaunchConfiguration) {
+                    val activeParameters = tryGetActiveParameters(cfg)
+                    if (activeParameters != null) {
+                        val launchParameters = activeParameters.getCurrentLaunchParameters()
+                        if (launchParameters is LocalCppProjectLaunchParameters) {
+                            launchParameters.envs -= CPP_RUN_CONFIGURATION_NAME_ENV_VARIABLE
+                        } else if (launchParameters is RdJsonLaunchParameters) {
+                            launchParameters.envs -= CPP_RUN_CONFIGURATION_NAME_ENV_VARIABLE
+                        }
                     }
                 }
             }

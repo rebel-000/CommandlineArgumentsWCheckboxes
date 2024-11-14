@@ -4,6 +4,10 @@
 
 ## Unreleased
 
+### Changed
+
+- Rider 2024.3 support
+
 ## 2.1.1 - 2024-10-29
 
 ### Fixed
