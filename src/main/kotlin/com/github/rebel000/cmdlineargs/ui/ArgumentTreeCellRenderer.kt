@@ -5,6 +5,8 @@ import com.intellij.ui.CheckboxTree
 import com.intellij.ui.JBColor
 import com.intellij.ui.SimpleTextAttributes
 import com.intellij.ui.components.JBRadioButton
+import com.intellij.util.ui.JBUI
+import com.intellij.util.ui.NamedColorUtil
 import com.intellij.util.ui.ThreeStateCheckBox
 import java.awt.BorderLayout
 import java.awt.Color
@@ -27,6 +29,8 @@ class ArgumentTreeCellRenderer : CheckboxTree.CheckboxTreeCellRenderer(true, fal
                     else AllIcons.Nodes.Folder
             else null
         }
+
+        val NOT_SUPPORTED_TEXT_ATTRIBUTES = SimpleTextAttributes(SimpleTextAttributes.STYLE_PLAIN, JBUI.CurrentTheme.IconBadge.WARNING)
     }
 
     override fun customizeRenderer(
@@ -42,10 +46,9 @@ class ArgumentTreeCellRenderer : CheckboxTree.CheckboxTreeCellRenderer(true, fal
             is NotSupportedNode -> {
                 myCheckbox.isVisible = false
                 myRadioButton.isVisible = false
-                textRenderer.icon = AllIcons.RunConfigurations.ToolbarError
+                textRenderer.icon = AllIcons.General.Warning
                 textRenderer.appendTextPadding(10)
-                textRenderer.append(value.toString())
-                textRenderer.foreground = JBColor.RED
+                textRenderer.append(value.toString(), NOT_SUPPORTED_TEXT_ATTRIBUTES)
             }
 
             is ArgumentTreeNode -> {
@@ -66,14 +69,13 @@ class ArgumentTreeCellRenderer : CheckboxTree.CheckboxTreeCellRenderer(true, fal
                 }
                 myCheckbox.state = value.state
                 myRadioButton.isSelected = value.state != ThreeStateCheckBox.State.NOT_SELECTED
-                var padding = 5
-                if (value.name.length < 100) {
-                    padding = 100
-                }
                 textRenderer.icon = getIcon(value)
-                textRenderer.append(value.toString())
-                textRenderer.appendTextPadding(padding)
-                textRenderer.append(value.filters.toString(), SimpleTextAttributes.GRAYED_ITALIC_ATTRIBUTES)
+                textRenderer.append("$value   ")
+                val filters = value.filters.toString()
+                if (filters.isNotEmpty()) {
+                    textRenderer.append("$filters  ", SimpleTextAttributes.GRAYED_BOLD_ATTRIBUTES)
+                }
+                textRenderer.append(value.description, SimpleTextAttributes.GRAYED_ITALIC_ATTRIBUTES)
                 textRenderer.foreground = fgColor
             }
         }

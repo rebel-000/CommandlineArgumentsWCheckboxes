@@ -41,6 +41,8 @@ class ArgumentPropertiesDialog(private val project: Project, private val node: A
         })
     }
 
+    private val descField: JBTextField = JBTextField(node.description)
+
     private val previewField: JBTextField = JBTextField().apply {
         isEditable = false
         border = BorderFactory.createEmptyBorder()
@@ -266,6 +268,7 @@ class ArgumentPropertiesDialog(private val project: Project, private val node: A
         return JBScrollPane(FormBuilder
             .createFormBuilder()
             .addLabeledComponent(Resources.message("properties.name"), nameField)
+            .addLabeledComponent(Resources.message("properties.desc"), descField)
             .addSeparator()
             .addComponentToRightColumn(isFolderField)
             .addComponentToRightColumn(folderAsParameterField)
@@ -315,6 +318,7 @@ class ArgumentPropertiesDialog(private val project: Project, private val node: A
 
     private fun applyTo(node: ArgumentTreeNode) {
         node.name = nameField.text
+        node.description = descField.text
         node.isFolder = isFolderField.isSelected
         node.folderAsParameter = folderAsParameterField.isSelected
         node.singleChoice = isSingleChoiceField.isSelected

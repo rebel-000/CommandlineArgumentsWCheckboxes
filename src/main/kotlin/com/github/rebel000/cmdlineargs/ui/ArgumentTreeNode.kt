@@ -17,6 +17,7 @@ open class ArgumentTreeNode(var name: String, var isFolder: Boolean, val readonl
     var joinDelimiter: String = ","
     var joinPrefix: String = ""
     var joinPostfix: String = ""
+    var description: String = ""
 
     open val state: ThreeStateCheckBox.State
         get() = privateState
@@ -73,6 +74,7 @@ open class ArgumentTreeNode(var name: String, var isFolder: Boolean, val readonl
     open fun toJson(): JsonObject {
         val result = JsonObject()
         result.addProperty("name", name)
+        result.addProperty("desc", description)
         result.addProperty("checked", isChecked)
         if (isFolder) {
             result.addProperty("param", folderAsParameter)
@@ -106,6 +108,7 @@ open class ArgumentTreeNode(var name: String, var isFolder: Boolean, val readonl
         val nameProperty = json.get("name")
         if (nameProperty != null) {
             name = nameProperty.asString
+            description = json.get("desc")?.asString ?: ""
             folderAsParameter = json.get("param")?.asBoolean == true
             joinChildren = json.get("join")?.asBoolean == true
             joinDelimiter = json.get("join.delimiter")?.asString ?: ","
