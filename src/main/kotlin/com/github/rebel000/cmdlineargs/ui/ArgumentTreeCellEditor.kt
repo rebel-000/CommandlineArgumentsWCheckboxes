@@ -2,6 +2,8 @@ package com.github.rebel000.cmdlineargs.ui
 
 import java.awt.Component
 import java.awt.Dimension
+import java.awt.event.FocusEvent
+import java.awt.event.FocusListener
 import javax.swing.DefaultCellEditor
 import javax.swing.JComponent
 import javax.swing.JTextField
@@ -43,8 +45,18 @@ class ArgumentTreeCellEditor(private val tree: ArgumentTree) : DefaultCellEditor
     }
 
     init {
+        textField.addFocusListener(object : FocusListener{
+            override fun focusGained(e: FocusEvent?) {}
+            override fun focusLost(e: FocusEvent?) {
+                val cause = e?.cause ?: FocusEvent.Cause.UNKNOWN
+                if (cause < FocusEvent.Cause.TRAVERSAL || cause > FocusEvent.Cause.TRAVERSAL_BACKWARD) {
+                    cancelCellEditing()
+                }
+            }
+        })
         addCellEditorListener(object : CellEditorListener {
             override fun editingStopped(e: ChangeEvent?) {
+                tree.isInlineEditorActive = false
                 val node = currentNode ?: return
                 val value = cellEditorValue as String
                 if (value.isNotEmpty()) {
@@ -60,7 +72,8 @@ class ArgumentTreeCellEditor(private val tree: ArgumentTree) : DefaultCellEditor
             }
 
             override fun editingCanceled(e: ChangeEvent?) {
-                editingStopped(e)
+                tree.isInlineEditorActive = false
+                // editingStopped(e)
             }
         })
         editorComponent = myEditorComponent

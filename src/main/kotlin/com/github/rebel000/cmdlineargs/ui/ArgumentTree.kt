@@ -5,6 +5,7 @@ import com.intellij.ide.dnd.TransferableList
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.wm.ToolWindowManager
 import com.intellij.ui.*
+import com.intellij.ui.tree.ui.DefaultTreeUI
 import com.intellij.util.ui.EditableModel
 import java.awt.datatransfer.Transferable
 import java.awt.event.*
@@ -33,11 +34,19 @@ class ArgumentTree(private val project: Project) : CheckboxTree(ArgumentTreeCell
         }
     }
 
+    var isInlineEditorActive: Boolean = false
     private var isLoading: Boolean = false
     private val argumentsService: ArgumentsService get() = ArgumentsService.getInstance(project)
     private val myModel: ArgumentTreeModel get() = model as ArgumentTreeModel
 
     init {
+        setUI(object : DefaultTreeUI() {
+            override fun startEditing(path: TreePath?, event: MouseEvent?): Boolean {
+                isInlineEditorActive = super.startEditing(path, event)
+                return isInlineEditorActive
+            }
+        })
+
         showsRootHandles = false
         model = ArgumentTreeModel(argumentsService.rootNode)
         cellEditor = ArgumentTreeCellEditor(this)
