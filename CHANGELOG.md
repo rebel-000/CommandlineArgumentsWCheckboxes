@@ -4,6 +4,8 @@
 
 ## Unreleased
 
+## 2.1.3 - 2025-04-17
+
 ### Fixed
 
 - Delete key now should work in inline edit
