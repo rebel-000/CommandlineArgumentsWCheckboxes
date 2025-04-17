@@ -12,12 +12,11 @@ class CppConfigurationParametersExtension(project: Project) : CppConfigurationPa
 
     override fun process(parameters: ExeConfigurationParameters) {
         if (argsService.isEnabled) {
-            val cfgName = parameters.envs.get(ArgumentsService.CPP_RUN_CONFIGURATION_NAME_ENV_VARIABLE) ?: argsService.lastCppConfigName
+            val cfgName = parameters.envs[ArgumentsService.CPP_RUN_CONFIGURATION_NAME_ENV_VARIABLE] ?: argsService.lastCppConfigName
             parameters.programParameters += " " + argsService.buildArgs(cfgName)
             argsService.lastCppConfigName = null
         }
     }
 
-    override fun dispose() {
-    }
+    override fun dispose() {}
 }

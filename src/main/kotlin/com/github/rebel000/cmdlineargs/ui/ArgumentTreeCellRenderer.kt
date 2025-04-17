@@ -2,11 +2,9 @@ package com.github.rebel000.cmdlineargs.ui
 
 import com.intellij.icons.AllIcons
 import com.intellij.ui.CheckboxTree
-import com.intellij.ui.JBColor
 import com.intellij.ui.SimpleTextAttributes
 import com.intellij.ui.components.JBRadioButton
 import com.intellij.util.ui.JBUI
-import com.intellij.util.ui.NamedColorUtil
 import com.intellij.util.ui.ThreeStateCheckBox
 import java.awt.BorderLayout
 import java.awt.Color

@@ -12,7 +12,7 @@ object Resources : AbstractBundle(BUNDLE) {
     @JvmStatic
     fun message(@PropertyKey(resourceBundle = BUNDLE) key: String, vararg params: Any) = getMessage(key, *params)
 
-    @Suppress("SpreadOperator")
+    @Suppress("unused", "SpreadOperator")
     @JvmStatic
     fun messagePtr(@PropertyKey(resourceBundle = BUNDLE) key: String, vararg params: Any) = run {
         message(key, *params)

@@ -166,9 +166,9 @@ class ArgumentPropertiesDialog(private val project: Project, private val node: A
             setLocation(location)
         }
 
-        previewNode.add(ArgumentTreeNode("{value1}", false, false))
-        previewNode.add(ArgumentTreeNode("{value2}", false, false))
-        previewNode.add(ArgumentTreeNode("{value3}", false, false))
+        previewNode.add(ArgumentTreeNode("{value1}", isFolder = false, readonly = false))
+        previewNode.add(ArgumentTreeNode("{value2}", isFolder = false, readonly = false))
+        previewNode.add(ArgumentTreeNode("{value3}", isFolder = false, readonly = false))
         previewNode.isChecked = false
         previewNode.isChecked = true
 
@@ -298,7 +298,7 @@ class ArgumentPropertiesDialog(private val project: Project, private val node: A
         }, 5).panel.apply {
             border = BorderFactory.createEmptyBorder(0, 0, 0, 20)
         }).apply {
-            preferredSize = JBUI.size(970, 680);
+            preferredSize = JBUI.size(970, 680)
             border = null
         }
     }
