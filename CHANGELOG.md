@@ -4,6 +4,20 @@
 
 ## Unreleased
 
+### Fixed
+
+- Delete key now should work in inline edit
+- Esc and losing focus will cancel inline editing without saving changes
+
+### Changed
+
+- Rider 2025.1 support
+- Improved inline editing
+
+### Added
+
+- Parameter description field (issue#33)
+
 ## 2.1.2 - 2024-11-15
 
 ### Changed
